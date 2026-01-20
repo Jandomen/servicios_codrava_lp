@@ -240,7 +240,7 @@ export function Sidebar({
                                                                 onChange={() => handleCategoryClick(cat)}
                                                                 className="peer absolute h-3.5 w-3.5 cursor-pointer opacity-0"
                                                             />
-                                                            <CheckSquare className="hidden h-2.5 w-2.5 text-[#D4AF37] peer-checked:block drop-shadow-[0_0_5px_rgba(212,175,55,1)]" />
+                                                            <CheckSquare className="hidden h-2.5 w-2.5 text-green-500 peer-checked:block drop-shadow-[0_0_5px_rgba(34,197,94,1)]" />
                                                         </div>
                                                         <span className="text-xs text-zinc-300 group-hover:text-white transition-colors">{cat}</span>
                                                     </label>
