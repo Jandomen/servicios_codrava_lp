@@ -88,14 +88,22 @@ export async function POST(req: Request) {
 
         // Map Google Places to our Prospect Interface
         const prospects = data.places.map((place: any) => {
-            // Estricta detección de WhatsApp
-            // Google formato internacional para móviles MX suele ser: +52 1 XX XXXX XXXX
-            // Si contiene "+52 1", es móvil seguro. Si no, lo tratamos como fijo por defecto.
+            // Estricta detección de WhatsApp (Solo Móviles Confirmados)
             const intl = place.internationalPhoneNumber || "";
-            const isMobile = intl.includes("+52 1"); // Heurística conservadora para evitar fijos
+            const cleanNumber = intl.replace(/\D/g, "");
 
-            // Limpieza del número para WhatsApp (solo dígitos, sin el +)
-            const waNumber = intl.replace(/\D/g, "");
+            // Regla: 
+            // 1. Debe ser México (+52)
+            // 2. Debe tener el marcador móvil (1) -> "+52 1"
+            // 3. Longitud exacta: 52 (2) + 1 (1) + 10 dígitos = 13 digitos
+            // CUALQUIER otra cosa se asume fijo o inválido para WA seguro.
+
+            const isMexicoMobile = intl.startsWith("+52 1") && cleanNumber.length === 13;
+
+            // Si queremos soportar otros paises, aqui iría la lógica. 
+            // Por ahora, priorizamos "NO mostrar" sobre "Mostrar error".
+
+            const waNumber = isMexicoMobile ? cleanNumber : undefined;
 
             return {
                 id: place.id,
@@ -112,8 +120,7 @@ export async function POST(req: Request) {
                 analysisStatus: "Parcial",
                 phone: place.nationalPhoneNumber || place.formattedPhoneNumber || "",
                 website: place.websiteUri,
-                // Solo asignamos whatsapp si pasó la prueba de móvil
-                whatsapp: isMobile ? waNumber : undefined,
+                whatsapp: waNumber,
                 email: undefined,
                 coordinates: {
                     lat: place.location?.latitude,
