@@ -2,8 +2,8 @@ import { RefreshCw } from "lucide-react";
 
 export function StatsBar() {
     return (
-        <div className="fixed top-24 left-0 right-0 z-30 border-b border-[#D4AF37]/20 bg-[#0B0B0E]/95 backdrop-blur-xl transition-all">
-            <div className="flex w-full items-center justify-between px-6 py-4">
+        <div className="fixed top-20 md:top-24 left-0 right-0 z-30 border-b border-[#D4AF37]/20 bg-[#0B0B0E]/95 backdrop-blur-xl transition-all">
+            <div className="flex w-full items-center justify-between px-4 py-3 md:px-6 md:py-4">
                 <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-4">
                     <StatCard label="Total Prospectos" value="124" />
                     <StatCard label="Prioridad Urgente" value="12" color="text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />

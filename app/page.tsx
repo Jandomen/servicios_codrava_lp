@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Modal State
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
@@ -109,11 +110,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0B0B0E] pt-52">
-      <Header />
+    <div className="flex min-h-screen bg-[#0B0B0E] pt-72 md:pt-52">
+      <Header onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
       <StatsBar />
 
       <Sidebar
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
         selectedCategories={selectedCategories}
         onCategoryChange={handleCategoryChange}
         onSearch={(q) => {
@@ -130,8 +133,8 @@ export default function Dashboard() {
         isGoogleMode={true}
       />
 
-      <main className="flex-1 pl-80 transition-all duration-300">
-        <div className="p-6">
+      <main className="flex-1 px-4 pl-0 transition-all duration-300 md:pl-80 md:px-0">
+        <div className="p-4 md:p-6">
           <div className="mb-6 flex items-center justify-end">
             <div className="flex gap-4">
               <select
@@ -193,7 +196,7 @@ export default function Dashboard() {
 
               {/* Content */}
               {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 max-w-5xl mx-auto">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 max-w-[1600px] mx-auto">
                   {filteredProspects.length > 0 ? (
                     filteredProspects.map((prospect, index) => (
                       <ProspectCard

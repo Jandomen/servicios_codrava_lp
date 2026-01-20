@@ -174,7 +174,7 @@ export function MapComponent({ prospects }: { prospects: Prospect[] }) {
     }
 
     return (
-        <div className="h-[75vh] aspect-square w-auto mx-auto rounded-xl border border-[#D4AF37]/20 shadow-gold overflow-hidden">
+        <div className="w-full aspect-square h-auto md:h-[75vh] md:w-auto mx-auto rounded-xl border border-[#D4AF37]/20 shadow-gold overflow-hidden">
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={defaultCenter}
