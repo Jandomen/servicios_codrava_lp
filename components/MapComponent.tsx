@@ -1,6 +1,6 @@
 "use client";
 
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import { type Prospect } from "./ProspectCard";
 import { useState, useCallback, useEffect } from "react";
 
@@ -122,13 +122,14 @@ const mapOptions = {
     ],
 };
 
-export function MapComponent({ prospects }: { prospects: Prospect[] }) {
+export function MapComponent({ prospects, onSelect }: { prospects: Prospect[], onSelect?: (prospect: Prospect) => void }) {
     const { isLoaded } = useJsApiLoader({
         id: "google-map-script",
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     });
 
     const [map, setMap] = useState<google.maps.Map | null>(null);
+    const [selectedMarker, setSelectedMarker] = useState<Prospect | null>(null);
 
     const onLoad = useCallback(
         (map: google.maps.Map) => {
@@ -182,6 +183,7 @@ export function MapComponent({ prospects }: { prospects: Prospect[] }) {
                 options={mapOptions}
                 onLoad={onLoad}
                 onUnmount={onUnmount}
+                onClick={() => setSelectedMarker(null)} // Click on map closes info window
             >
                 {prospects.map((prospect) => (
                     prospect.coordinates && (
@@ -203,9 +205,48 @@ export function MapComponent({ prospects }: { prospects: Prospect[] }) {
                                 scale: 2,
                                 anchor: new google.maps.Point(12, 22),
                             }}
+                            onClick={() => setSelectedMarker(prospect)}
                         />
                     )
                 ))}
+
+                {selectedMarker && selectedMarker.coordinates && (
+                    <InfoWindow
+                        position={{
+                            lat: selectedMarker.coordinates.lat,
+                            lng: selectedMarker.coordinates.lng,
+                        }}
+                        onCloseClick={() => setSelectedMarker(null)}
+                        options={{
+                            pixelOffset: new window.google.maps.Size(0, -30),
+                        }}
+                    >
+                        <div className="bg-black text-white p-2 min-w-[200px] max-w-[250px]">
+                            <h3 className="font-bold text-sm mb-1 text-[#D4AF37]">{selectedMarker.name}</h3>
+                            <p className="text-xs text-zinc-400 mb-2 truncate">{selectedMarker.address}</p>
+                            <div className="flex gap-2">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold
+                                    ${selectedMarker.priority === 'URGENTE' ? 'bg-red-500/20 text-red-500' :
+                                        selectedMarker.priority === 'MEDIO' ? 'bg-blue-500/20 text-blue-500' :
+                                            'bg-green-500/20 text-green-500'}`}>
+                                    {selectedMarker.priority}
+                                </span>
+                            </div>
+
+                            {onSelect && (
+                                <button
+                                    onClick={() => {
+                                        onSelect(selectedMarker);
+                                        setSelectedMarker(null);
+                                    }}
+                                    className="mt-3 w-full bg-[#D4AF37] hover:bg-[#E5C148] text-black text-xs font-bold py-1.5 px-3 rounded-md transition-colors"
+                                >
+                                    VER DETALLES
+                                </button>
+                            )}
+                        </div>
+                    </InfoWindow>
+                )}
             </GoogleMap>
         </div>
     );

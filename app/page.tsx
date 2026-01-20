@@ -242,7 +242,7 @@ export default function Dashboard() {
                   )}
                 </div>
               ) : (
-                <MapComponent prospects={filteredProspects} />
+                <MapComponent prospects={filteredProspects} onSelect={setSelectedProspect} />
               )}
             </>
           )}
