@@ -222,9 +222,8 @@ function formatCategory(type: string): string {
 
 function calculatePriority(rating: number, reviews: number) {
     if (!rating || rating < 3.5) return "URGENTE";
-    if (reviews < 10) return "ALTA";
-    if (rating < 4.5) return "MEDIA";
-    return "BAJA";
+    if (rating < 4.5) return "MEDIO";
+    return "BAJO";
 }
 
 function generateGaps(place: any) {

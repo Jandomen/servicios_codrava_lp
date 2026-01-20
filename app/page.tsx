@@ -49,6 +49,10 @@ export default function Dashboard() {
     setHasSearched(true);
     setErrorMsg("");
 
+    // Clear filters to ensure new results are visible
+    setSelectedCategories([]);
+    setSelectedPriority("Todas las prioridades");
+
     try {
       const res = await fetch("/api/places/search", {
         method: "POST",
@@ -86,13 +90,15 @@ export default function Dashboard() {
     // Local Filters for Google Results
     const matchesPriority =
       selectedPriority === "Todas las prioridades" ||
-      prospect.priority.toLowerCase() === selectedPriority.toLowerCase().split(" ")[0] ||
       prospect.priority === selectedPriority;
 
-    // NOTE: We disable client-side text filtering for Google Search.
-    // The API already filtered by the query string. 
-    // Applying it again would hide results that don't strictly contain the query text (e.g. "Restaurantes en Monterrey").
-    const matchesSearch = true;
+    // Restore text filtering
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      !searchQuery ||
+      prospect.name.toLowerCase().includes(q) ||
+      prospect.address.toLowerCase().includes(q) ||
+      prospect.category.toLowerCase().includes(q);
 
     const matchesCategory =
       selectedCategories.length === 0 ||
@@ -119,6 +125,7 @@ export default function Dashboard() {
         onClose={() => setMobileMenuOpen(false)}
         selectedCategories={selectedCategories}
         onCategoryChange={handleCategoryChange}
+        onSelectAll={() => setSelectedCategories([...CATEGORIES])}
         onSearch={(q) => {
           setSearchQuery(q);
         }}
@@ -144,9 +151,8 @@ export default function Dashboard() {
               >
                 <option>Todas las prioridades</option>
                 <option value="URGENTE">Urgente</option>
-                <option value="ALTA">Alta</option>
-                <option value="MEDIA">Media</option>
-                <option value="BAJA">Baja</option>
+                <option value="MEDIO">Medio</option>
+                <option value="BAJO">Bajo</option>
               </select>
 
               <div className="flex rounded-lg border border-zinc-800 bg-zinc-900 p-1">

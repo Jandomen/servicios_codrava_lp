@@ -21,7 +21,7 @@ export interface Prospect {
     rating: number;
     reviewCount: number;
     address: string;
-    priority: "URGENTE" | "ALTA" | "MEDIA" | "BAJA";
+    priority: "URGENTE" | "MEDIO" | "BAJO";
     gaps: string[];
     pitch: string;
     hasWebsite: boolean;
@@ -195,14 +195,13 @@ export function ProspectCard({
 function PriorityBadge({ priority }: { priority: string }) {
     const styles = {
         URGENTE: "bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.2)]",
-        ALTA: "bg-amber-500/10 text-amber-500 border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.2)]",
-        MEDIA: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-        BAJA: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
+        MEDIO: "bg-blue-500/10 text-blue-500 border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.2)]",
+        BAJO: "bg-green-500/10 text-green-500 border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]",
     };
 
     return (
         <span
-            className={`rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${styles[priority as keyof typeof styles] || styles.BAJA
+            className={`rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${styles[priority as keyof typeof styles] || styles.BAJO
                 }`}
         >
             {priority}

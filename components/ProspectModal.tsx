@@ -75,8 +75,11 @@ export function ProspectModal({ prospect, onClose }: ProspectModalProps) {
                     {/* Header */}
                     <div className="relative z-10 shrink-0 border-b border-zinc-800/50 bg-[#121214] p-5">
                         <div className="flex justify-between items-start mb-2">
-                            <div className={`inline-flex items-center gap-2 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${prospect.priority === 'URGENTE' ? 'bg-red-500/20 text-red-500' : 'bg-zinc-800 text-zinc-400'}`}>
-                                {prospect.priority === 'URGENTE' ? 'URGENTE — Requiere acción inmediata' : prospect.priority}
+                            <div className={`inline-flex items-center gap-2 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wide border ${prospect.priority === 'URGENTE' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                prospect.priority === 'MEDIO' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                    'bg-green-500/10 text-green-500 border-green-500/20'
+                                }`}>
+                                {prospect.priority}
                             </div>
                             <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
                                 <X className="h-5 w-5" />
@@ -112,7 +115,7 @@ export function ProspectModal({ prospect, onClose }: ProspectModalProps) {
                                     <Mail className="h-3 w-3" /> CORREO ELECTRÓNICO
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <p className="text-sm text-zinc-200 font-medium">{prospect.email || "null"}</p>
+                                    <p className="text-sm text-zinc-200 font-medium">{prospect.email || "Sin correo"}</p>
                                     {prospect.email && <Copy className="h-3 w-3 text-zinc-600 cursor-pointer hover:text-white" onClick={() => handleCopy(prospect.email!, 'email')} />}
                                 </div>
                             </div>
