@@ -137,7 +137,7 @@ export function ProspectCard({
                     onClick={() => onViewDetails?.(prospect)}
                     className="rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#B5952F] px-3 py-2 text-xs font-bold text-black shadow-[0_0_15px_rgba(212,175,55,0.4)] hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-1"
                 >
-                    <span className="truncate">VER FICHA</span>
+                    <span className="truncate">VER DETALLES</span>
                 </button>
 
                 {/* Website Button */}

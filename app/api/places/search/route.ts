@@ -27,21 +27,47 @@ export async function POST(req: Request) {
 
         // Prepare request to Google Places API (New)
         console.log("Calling Google Places API...");
-        const response = await fetch(GOOGLE_PLACES_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Goog-Api-Key": apiKey,
-                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.primaryType",
-                // FIX: Google API Key has Referer restrictions. 
-                // We must send a matching Referer from the server validation.
-                "Referer": "http://localhost:3000/",
-            },
-            body: JSON.stringify({
-                textQuery: query,
-                maxResultCount: 20,
-            }),
-        });
+        // Retry Logic with Exponential Backoff
+        const maxRetries = 3;
+        let response;
+        let lastError;
+
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                if (attempt > 0) {
+                    console.log(`Retrying Google API (Attempt ${attempt + 1}/${maxRetries})...`);
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1))); // 1s, 2s, 4s
+                }
+
+                response = await fetch(GOOGLE_PLACES_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": apiKey,
+                        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.primaryType",
+                        "Referer": "http://localhost:3000/", // Consider making this dynamic based on req.headers.get("origin") or env var
+                    },
+                    body: JSON.stringify({
+                        textQuery: query,
+                        maxResultCount: 20,
+                    }),
+                });
+
+                if (response.ok) break; // Success!
+
+                // If 500/503/429, we retry. Otherwise (400, 403), we stop.
+                if (![500, 503, 504, 429].includes(response.status)) {
+                    break;
+                }
+            } catch (err) {
+                lastError = err;
+                console.warn(`Connection failed (Attempt ${attempt + 1}):`, err);
+            }
+        }
+
+        if (!response) {
+            throw lastError || new Error("Failed to connect to Google API after retries");
+        }
 
         const data = await response.json();
 
