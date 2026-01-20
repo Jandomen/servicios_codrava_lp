@@ -201,7 +201,7 @@ export function MapComponent({ prospects, onSelect }: { prospects: Prospect[], o
                                         "#22C55E",                                    // Green (Bajo)
                                 fillOpacity: 1,
                                 strokeWeight: 1,
-                                strokeColor: "#FFFFFF",
+                                strokeColor: "#000000",
                                 scale: 2,
                                 anchor: new google.maps.Point(12, 22),
                             }}

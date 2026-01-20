@@ -225,9 +225,10 @@ function formatCategory(type: string): string {
 }
 
 function calculatePriority(rating: number, reviews: number) {
-    if (!rating || rating < 3.5) return "URGENTE";
-    if (rating < 4.5) return "MEDIO";
-    return "BAJO";
+    if (!rating) return "URGENTE"; // Sin rating = Oportunidad vacía
+    if (rating < 4.0 || reviews < 15) return "URGENTE"; // Baja calidad o sin presencia social
+    if (rating < 4.5) return "MEDIO"; // Promedio
+    return "BAJO"; // Bien posicionado
 }
 
 function generateGaps(place: any) {
