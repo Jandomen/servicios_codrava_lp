@@ -1,0 +1,168 @@
+import { NextResponse } from "next/server";
+
+const GOOGLE_PLACES_API_URL = "https://places.googleapis.com/v1/places:searchText";
+
+export async function POST(req: Request) {
+    try {
+        const body = await req.json();
+        const { query } = body;
+
+        console.log("Search query received:", query);
+
+        if (!query) {
+            return NextResponse.json(
+                { success: false, error: "Query is required" },
+                { status: 400 }
+            );
+        }
+
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+            console.error("API Key is missing in environment variables");
+            return NextResponse.json(
+                { success: false, error: "Server Configuration Error: API Key missing" },
+                { status: 500 }
+            );
+        }
+
+        // Prepare request to Google Places API (New)
+        console.log("Calling Google Places API...");
+        const response = await fetch(GOOGLE_PLACES_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": apiKey,
+                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.nationalPhoneNumber,places.websiteUri,places.primaryType",
+                // FIX: Google API Key has Referer restrictions. 
+                // We must send a matching Referer from the server validation.
+                "Referer": "http://localhost:3000/",
+            },
+            body: JSON.stringify({
+                textQuery: query,
+                maxResultCount: 20,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Google API Response Error:", data);
+            return NextResponse.json(
+                { success: false, error: data.error?.message || "Google API returned an error" },
+                { status: response.status }
+            );
+        }
+
+        if (!data.places || data.places.length === 0) {
+            console.log("No places found for query:", query);
+            return NextResponse.json({ success: true, data: [] });
+        }
+
+        console.log(`Found ${data.places.length} places`);
+
+        // Map Google Places to our Prospect Interface
+        const prospects = data.places.map((place: any) => ({
+            id: place.id,
+            name: place.displayName?.text || "Desconocido",
+            category: place.primaryType ? formatCategory(place.primaryType) : "Negocio",
+            rating: place.rating || 0,
+            reviewCount: place.userRatingCount || 0,
+            address: place.formattedAddress || "Sin dirección",
+            priority: calculatePriority(place.rating, place.userRatingCount),
+            gaps: generateGaps(place),
+            pitch: generatePitch(place),
+            hasWebsite: !!place.websiteUri,
+            hasApi: false, // Assumption
+            analysisStatus: "Parcial",
+            phone: place.nationalPhoneNumber || "",
+            website: place.websiteUri,
+            // Simple inference: If valid phone, assume it might have WhatsApp (clean non-digits)
+            whatsapp: place.nationalPhoneNumber ? place.nationalPhoneNumber.replace(/\D/g, "") : undefined,
+            email: undefined, // Google Places API (New) hardly ever returns email directly.
+            coordinates: {
+                lat: place.location?.latitude,
+                lng: place.location?.longitude,
+            },
+        }));
+
+        return NextResponse.json({ success: true, data: prospects });
+    } catch (error) {
+        console.error("Internal Server Error in /api/places/search:", error);
+        return NextResponse.json(
+            { success: false, error: "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+}
+
+// Helpers
+const CATEGORY_MAP: Record<string, string> = {
+    "restaurant": "Restaurantes",
+    "cafe": "Restaurantes",
+    "meal_takeaway": "Restaurantes",
+    "bar": "Restaurantes",
+    "lawyer": "Abogados",
+    "attorney": "Abogados",
+    "hardware_store": "Ferreterías",
+    "real_estate_agency": "Inmobiliarias",
+    "dentist": "Dentistas",
+    "dental_clinic": "Dentistas",
+    "accounting": "Contadores",
+    "gym": "Gimnasios",
+    "fitness_center": "Gimnasios",
+    "car_repair": "Talleres",
+    "auto_repair": "Talleres",
+    "lodging": "Hoteles",
+    "hotel": "Hoteles",
+    "beauty_salon": "Salones de Belleza",
+    "hair_care": "Salones de Belleza",
+    "spa": "Salones de Belleza",
+};
+
+function formatCategory(type: string): string {
+    const t = type.toLowerCase();
+
+    // Broad Matching Logic (Keywords)
+    if (t.includes("restaurant") || t.includes("cafe") || t.includes("food") || t.includes("bar") || t.includes("bakery") || t.includes("meal")) return "Restaurantes";
+    if (t.includes("lawyer") || t.includes("attorney") || t.includes("legal")) return "Abogados";
+    if (t.includes("hardware") || t.includes("tool") || t.includes("construction")) return "Ferreterías";
+    if (t.includes("real_estate") || t.includes("realty") || t.includes("agency")) return "Inmobiliarias";
+    if (t.includes("dentist") || t.includes("dental") || t.includes("orthodont")) return "Dentistas";
+    if (t.includes("account") || t.includes("tax") || t.includes("finance") || t.includes("bank")) return "Contadores";
+    if (t.includes("gym") || t.includes("fitness") || t.includes("workout") || t.includes("sport") || t.includes("crossfit")) return "Gimnasios";
+    if (t.includes("repair") || t.includes("auto") || t.includes("mechanic") || t.includes("garage")) return "Talleres";
+    if (t.includes("hotel") || t.includes("motel") || t.includes("lodging") || t.includes("resort")) return "Hoteles";
+    if (t.includes("salon") || t.includes("hair") || t.includes("beauty") || t.includes("spa") || t.includes("barber")) return "Salones de Belleza";
+
+    // Fallback: Format English nicely if no match
+    return t
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function calculatePriority(rating: number, reviews: number) {
+    if (!rating || rating < 3.5) return "URGENTE";
+    if (reviews < 10) return "ALTA";
+    if (rating < 4.5) return "MEDIA";
+    return "BAJA";
+}
+
+function generateGaps(place: any) {
+    const gaps = [];
+    if (!place.websiteUri) gaps.push("Sin Sitio Web");
+    if (!place.rating || place.rating < 4.0) gaps.push("Reputación Baja");
+    if (!place.userRatingCount || place.userRatingCount < 20) gaps.push("Pocas Reseñas");
+    if (gaps.length === 0) gaps.push("Optimización SEO");
+    return gaps;
+}
+
+function generatePitch(place: any) {
+    const name = place.displayName?.text || "este negocio";
+    if (!place.websiteUri) {
+        return `${name} está perdiendo clientes potenciales al no tener presencia web. Una Landing Page moderna capturaría ese tráfico perdido.`;
+    }
+    if (!place.rating || place.rating < 4.0) {
+        return `La reputación actual de ${name} está limitando su crecimiento. Una estrategia de gestión de reseñas mejoraría su posicionamiento local.`;
+    }
+    return `${name} tiene buena base, pero podría escalar automatizando sus consultas con un Chatbot de IA.`;
+}
