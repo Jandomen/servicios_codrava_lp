@@ -4,18 +4,27 @@ import { useState } from "react";
 import { Search, CheckSquare, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES = [
-    "Abogados",
-    "Restaurantes",
-    "Ferreterías",
-    "Inmobiliarias",
-    "Dentistas",
-    "Contadores",
-    "Gimnasios",
-    "Talleres",
-    "Hoteles",
-    "Salones de Belleza",
-];
+export const CATEGORIES = [
+    // ... (This lines will be matched by context, I just need to add export)
+    // Salud & Bienestar
+    "Médicos", "Clínicas", "Dentistas", "Psicólogos", "Nutriólogos", "Veterinarios", "Farmacias", "Laboratorios",
+    // Gastronomía
+    "Restaurantes", "Cafeterías", "Bares", "Panaderías", "Pastelerías", "Catering", "Comida Rápida",
+    // Legal & Financiero
+    "Abogados", "Contadores", "Notarías", "Seguros", "Consultorías", "Bancos",
+    // Hogar & Construcción
+    "Ferreterías", "Arquitectos", "Mueblerías", "Plomeros", "Electricistas", "Decoración", "Jardinería",
+    // Educación
+    "Escuelas", "Colegios", "Universidades", "Cursos de Idiomas", "Guarderías",
+    // Automotriz
+    "Talleres Mecánicos", "Refaccionarias", "Lavado de Autos", "Agencias de Autos",
+    // Belleza
+    "Salones de Belleza", "Barberías", "Spas", "Gimnasios", "Yoga",
+    // Tecnología & Servicios
+    "Marketing", "Desarrollo Web", "Electrónica", "Reparación Celulares", "Imprentas",
+    // Inmobiliaria & Turismo
+    "Inmobiliarias", "Hoteles", "Agencias de Viajes"
+].sort();
 
 export function Sidebar({
     selectedCategories = [],
@@ -26,6 +35,7 @@ export function Sidebar({
     isGoogleMode,
     isOpen = false,
     onClose = () => { },
+    onSelectAll, // New prop
 }: {
     selectedCategories?: string[];
     onCategoryChange?: (category: string) => void;
@@ -35,6 +45,7 @@ export function Sidebar({
     isGoogleMode?: boolean;
     isOpen?: boolean;
     onClose?: () => void;
+    onSelectAll?: () => void;
 }) {
     const [localSearch, localSetSearch] = useState("");
 
@@ -47,6 +58,21 @@ export function Sidebar({
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && onTriggerGoogleSearch) {
             onTriggerGoogleSearch(localSearch);
+            onClose?.();
+        }
+    };
+
+    const handleCategoryClick = (cat: string) => {
+        // 1. Toggle Selection
+        onCategoryChange(cat);
+
+        // 2. Auto-Search in Google Mode (if selecting, not deselecting)
+        // We assume if it's not currently selected, we are selecting it.
+        const isSelecting = !selectedCategories.includes(cat);
+        if (isGoogleMode && onTriggerGoogleSearch && isSelecting) {
+            onTriggerGoogleSearch(cat); // "Búsqueda en automático"
+            // Optional: Close sidebar on mobile to show results immediately?
+            // onClose?.(); 
         }
     };
 
@@ -126,7 +152,14 @@ export function Sidebar({
                             <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">
                                 Filtro de Categorías
                             </label>
-                            <div className="flex gap-3">
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={onSelectAll}
+                                    className="text-[10px] text-[#D4AF37] hover:text-white transition-colors uppercase tracking-wider font-bold"
+                                >
+                                    Todo
+                                </button>
+                                <span className="text-zinc-700">|</span>
                                 <button
                                     onClick={onClear}
                                     className="text-[10px] text-zinc-500 hover:text-white transition-colors uppercase tracking-wider"
@@ -146,7 +179,7 @@ export function Sidebar({
                                         <input
                                             type="checkbox"
                                             checked={selectedCategories.includes(cat)}
-                                            onChange={() => onCategoryChange(cat)}
+                                            onChange={() => handleCategoryClick(cat)}
                                             className="peer absolute h-4 w-4 cursor-pointer opacity-0"
                                         />
                                         <CheckSquare className="hidden h-3 w-3 text-[#D4AF37] peer-checked:block drop-shadow-[0_0_5px_rgba(212,175,55,1)]" />

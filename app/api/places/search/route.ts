@@ -162,22 +162,62 @@ const CATEGORY_MAP: Record<string, string> = {
 function formatCategory(type: string): string {
     const t = type.toLowerCase();
 
-    // Broad Matching Logic (Keywords)
-    if (t.includes("restaurant") || t.includes("cafe") || t.includes("food") || t.includes("bar") || t.includes("bakery") || t.includes("meal")) return "Restaurantes";
-    if (t.includes("lawyer") || t.includes("attorney") || t.includes("legal")) return "Abogados";
-    if (t.includes("hardware") || t.includes("tool") || t.includes("construction")) return "Ferreterías";
-    if (t.includes("real_estate") || t.includes("realty") || t.includes("agency")) return "Inmobiliarias";
-    if (t.includes("dentist") || t.includes("dental") || t.includes("orthodont")) return "Dentistas";
-    if (t.includes("account") || t.includes("tax") || t.includes("finance") || t.includes("bank")) return "Contadores";
-    if (t.includes("gym") || t.includes("fitness") || t.includes("workout") || t.includes("sport") || t.includes("crossfit")) return "Gimnasios";
-    if (t.includes("repair") || t.includes("auto") || t.includes("mechanic") || t.includes("garage")) return "Talleres";
-    if (t.includes("hotel") || t.includes("motel") || t.includes("lodging") || t.includes("resort")) return "Hoteles";
-    if (t.includes("salon") || t.includes("hair") || t.includes("beauty") || t.includes("spa") || t.includes("barber")) return "Salones de Belleza";
+    // Salud
+    if (t.includes("dentist") || t.includes("orthodont")) return "Dentistas";
+    if (t.includes("doctor") || t.includes("practitioner") || t.includes("physician")) return "Médicos";
+    if (t.includes("clinic") || t.includes("hospital") || t.includes("medical")) return "Clínicas";
+    if (t.includes("pharmacy") || t.includes("drugstore")) return "Farmacias";
+    if (t.includes("veterinary") || t.includes("vet")) return "Veterinarios";
+    if (t.includes("psychologist") || t.includes("mental")) return "Psicólogos";
 
-    // Fallback: Format English nicely if no match
-    return t
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+    // Gastronomía
+    if (t.includes("restaurant") || t.includes("food")) return "Restaurantes";
+    if (t.includes("cafe") || t.includes("coffee")) return "Cafeterías";
+    if (t.includes("bakery")) return "Panaderías";
+    if (t.includes("bar") || t.includes("liquor") || t.includes("pub") || t.includes("night")) return "Bares";
+    if (t.includes("meal_delivery") || t.includes("meal_takeaway")) return "Comida Rápida";
+
+    // Legal & Financiero
+    if (t.includes("lawyer") || t.includes("attorney") || t.includes("legal")) return "Abogados";
+    if (t.includes("accounting") || t.includes("finance") || t.includes("tax")) return "Contadores";
+    if (t.includes("insur")) return "Seguros";
+    if (t.includes("notary")) return "Notarías";
+    if (t.includes("bank") || t.includes("atm")) return "Bancos";
+
+    // Hogar & Construcción
+    if (t.includes("hardware")) return "Ferreterías";
+    if (t.includes("plumber")) return "Plomeros";
+    if (t.includes("electrician")) return "Electricistas";
+    if (t.includes("carpenter") || t.includes("furniture")) return "Mueblerías";
+    if (t.includes("architect")) return "Arquitectos";
+    if (t.includes("painter") || t.includes("decor")) return "Decoración";
+
+    // Educación
+    if (t.includes("school") || t.includes("education")) return "Escuelas";
+    if (t.includes("university") || t.includes("college")) return "Universidades";
+    if (t.includes("language")) return "Cursos de Idiomas";
+
+    // Automotriz
+    if (t.includes("car_repair") || t.includes("mechanic")) return "Talleres Mecánicos";
+    if (t.includes("car_dealer")) return "Agencias de Autos";
+    if (t.includes("car_wash")) return "Lavado de Autos";
+
+    // Belleza
+    if (t.includes("hair") || t.includes("salon") || t.includes("barber")) return "Salones de Belleza";
+    if (t.includes("spa") || t.includes("massage")) return "Spas";
+    if (t.includes("gym") || t.includes("fitness") || t.includes("yoga")) return "Gimnasios";
+
+    // Tecnología
+    if (t.includes("electronics")) return "Electrónica";
+    if (t.includes("web") || t.includes("software") || t.includes("computer")) return "Desarrollo Web";
+
+    // Inmobiliaria & Turismo
+    if (t.includes("real_estate") || t.includes("agency")) return "Inmobiliarias";
+    if (t.includes("hotel") || t.includes("lodging")) return "Hoteles";
+    if (t.includes("travel")) return "Agencias de Viajes";
+
+    // Fallback: Clean string
+    return t.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function calculatePriority(rating: number, reviews: number) {
