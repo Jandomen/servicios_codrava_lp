@@ -50,3 +50,42 @@ body {
     @apply bg-[#121216]/80 backdrop-blur-md border border-zinc-800;
   }
 }
+
+/* Google Maps Dark Mode Overrides for InfoWindow */
+.gm-style-iw {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.2) !important;
+  padding: 0 !important;
+}
+
+.gm-style-iw-c {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  background-color: #000000 !important;
+}
+
+.gm-style-iw-tc::after {
+  background: #000000 !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  border-top: none !important;
+  border-left: none !important;
+}
+
+.gm-style-iw-d {
+  overflow: hidden !important;
+  padding: 0 !important;
+  background-color: #000000 !important;
+}
+
+/* Close button - make it white/gold or hide it if we want custom */
+.gm-ui-hover-effect {
+  filter: invert(1) !important; /* Makes the X white */
+  opacity: 0.7 !important;
+}
+
+.gm-ui-hover-effect:hover {
+  opacity: 1 !important;
+}
