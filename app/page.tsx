@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar, CATEGORIES } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { ProspectCard, type Prospect } from "@/components/ProspectCard";
 import { MapComponent } from "@/components/MapComponent";
