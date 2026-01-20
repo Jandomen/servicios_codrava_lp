@@ -12,7 +12,6 @@ body {
   scrollbar-color: #d4af37 #0b0b0e;
 }
 
-/* Scrollbar Chrome */
 ::-webkit-scrollbar {
   width: 8px;
 }

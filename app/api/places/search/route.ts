@@ -32,7 +32,7 @@ export async function POST(req: Request) {
             headers: {
                 "Content-Type": "application/json",
                 "X-Goog-Api-Key": apiKey,
-                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.nationalPhoneNumber,places.websiteUri,places.primaryType",
+                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.primaryType",
                 // FIX: Google API Key has Referer restrictions. 
                 // We must send a matching Referer from the server validation.
                 "Referer": "http://localhost:3000/",
@@ -61,29 +61,43 @@ export async function POST(req: Request) {
         console.log(`Found ${data.places.length} places`);
 
         // Map Google Places to our Prospect Interface
-        const prospects = data.places.map((place: any) => ({
-            id: place.id,
-            name: place.displayName?.text || "Desconocido",
-            category: place.primaryType ? formatCategory(place.primaryType) : "Negocio",
-            rating: place.rating || 0,
-            reviewCount: place.userRatingCount || 0,
-            address: place.formattedAddress || "Sin dirección",
-            priority: calculatePriority(place.rating, place.userRatingCount),
-            gaps: generateGaps(place),
-            pitch: generatePitch(place),
-            hasWebsite: !!place.websiteUri,
-            hasApi: false, // Assumption
-            analysisStatus: "Parcial",
-            phone: place.nationalPhoneNumber || "",
-            website: place.websiteUri,
-            // Simple inference: If valid phone, assume it might have WhatsApp (clean non-digits)
-            whatsapp: place.nationalPhoneNumber ? place.nationalPhoneNumber.replace(/\D/g, "") : undefined,
-            email: undefined, // Google Places API (New) hardly ever returns email directly.
-            coordinates: {
-                lat: place.location?.latitude,
-                lng: place.location?.longitude,
-            },
-        }));
+        const prospects = data.places.map((place: any) => {
+            // DEBUG: Inspect phone numbers
+            const intl = place.internationalPhoneNumber;
+            const nat = place.nationalPhoneNumber;
+            const wa = intl
+                ? intl.replace(/\D/g, "")
+                : (nat ? "52" + nat.replace(/\D/g, "") : undefined);
+
+            console.log(`[Phone Debug] Name: ${place.displayName?.text} | Intl: ${intl} | Nat: ${nat} | WA Generated: ${wa}`);
+
+            return {
+                id: place.id,
+                name: place.displayName?.text || "Desconocido",
+                category: place.primaryType ? formatCategory(place.primaryType) : "Negocio",
+                rating: place.rating || 0,
+                reviewCount: place.userRatingCount || 0,
+                address: place.formattedAddress || "Sin dirección",
+                priority: calculatePriority(place.rating, place.userRatingCount),
+                gaps: generateGaps(place),
+                pitch: generatePitch(place),
+                hasWebsite: !!place.websiteUri,
+                hasApi: false, // Assumption
+                analysisStatus: "Parcial",
+                phone: place.nationalPhoneNumber || "",
+                website: place.websiteUri,
+                // Strict inference: Use international phone number to get country code (e.g. 52 for Mexico)
+                // WhatsApp requires the country code without '+'.
+                whatsapp: place.internationalPhoneNumber
+                    ? place.internationalPhoneNumber.replace(/\D/g, "")
+                    : (place.nationalPhoneNumber ? "52" + place.nationalPhoneNumber.replace(/\D/g, "") : undefined),
+                email: undefined, // Google Places API (New) hardly ever returns email directly.
+                coordinates: {
+                    lat: place.location?.latitude,
+                    lng: place.location?.longitude,
+                },
+            };
+        });
 
         return NextResponse.json({ success: true, data: prospects });
     } catch (error) {

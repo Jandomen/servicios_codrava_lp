@@ -24,14 +24,14 @@ export function ProspectModal({ prospect, onClose }: ProspectModalProps) {
                     className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                 />
 
-                {/* Modal */}
+              
                 <motion.div
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
                     className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-[#D4AF37]/30 bg-[#0B0B0E] shadow-[0_0_40px_rgba(212,175,55,0.15)]"
                 >
-                    {/* Header */}
+                   
                     <div className="relative border-b border-zinc-800 p-6">
                         <button
                             onClick={onClose}
@@ -57,9 +57,9 @@ export function ProspectModal({ prospect, onClose }: ProspectModalProps) {
                         </div>
                     </div>
 
-                    {/* Content */}
+                   
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Left Column: Contact & Info */}
+                      
                         <div className="space-y-6">
 
                             <div className="space-y-3">

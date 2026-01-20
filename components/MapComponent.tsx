@@ -12,7 +12,7 @@ const containerStyle = {
 
 const defaultCenter = {
     lat: 19.432608,
-    lng: -99.133209, // Mexico City
+    lng: -99.133209,
 };
 
 const mapOptions = {
@@ -137,7 +137,6 @@ export function MapComponent({ prospects }: { prospects: Prospect[] }) {
         []
     );
 
-    // Auto-center map when prospects change
     useEffect(() => {
         if (map && prospects.length > 0) {
             const bounds = new window.google.maps.LatLngBounds();
@@ -155,7 +154,6 @@ export function MapComponent({ prospects }: { prospects: Prospect[] }) {
 
             if (hasValidCoords) {
                 map.fitBounds(bounds);
-                // Adjust zoom if too close (single result)
                 const listener = window.google.maps.event.addListenerOnce(map, "bounds_changed", () => {
                     if (map.getZoom()! > 16) map.setZoom(16);
                 });
@@ -176,7 +174,7 @@ export function MapComponent({ prospects }: { prospects: Prospect[] }) {
     }
 
     return (
-        <div className="h-[calc(100vh-12rem)] w-full rounded-xl border border-[#D4AF37]/20 shadow-gold overflow-hidden">
+        <div className="h-[75vh] aspect-square w-auto mx-auto rounded-xl border border-[#D4AF37]/20 shadow-gold overflow-hidden">
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={defaultCenter}
@@ -194,11 +192,7 @@ export function MapComponent({ prospects }: { prospects: Prospect[] }) {
                                 lng: prospect.coordinates.lng,
                             }}
                             title={prospect.name}
-                        // We could use a custom gold icon here if we had the URL
-                        // icon={{
-                        //   url: "/gold-marker.png", 
-                        //   scaledSize: new window.google.maps.Size(30, 30)
-                        // }}
+
                         />
                     )
                 ))}

@@ -7,6 +7,7 @@ import { ProspectCard, type Prospect } from "@/components/ProspectCard";
 import { MapComponent } from "@/components/MapComponent";
 import { ProspectModal } from "@/components/ProspectModal";
 import { LayoutGrid, Map, AlertCircle, Search } from "lucide-react";
+import { StatsBar } from "@/components/StatsBar";
 
 export default function Dashboard() {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
@@ -31,10 +32,7 @@ export default function Dashboard() {
     if (!effectiveQuery) {
       effectiveQuery = "Negocios Recomendados en esta zona";
     }
-    // 2. Inteligencia de búsqueda: Si parece una ubicación sola (sin "en" y no es algo como "papas"), 
-    // asumimos que el usuario quiere buscar negocios en esa ubicación.
-    // "papas" -> pasa directo.
-    // "Toluca" -> "Mejores negocios en Toluca"
+
     else if (
       !effectiveQuery.toLowerCase().includes(" en ") &&
       !effectiveQuery.toLowerCase().includes(" near ") &&
@@ -111,7 +109,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0B0B0E]">
+    <div className="flex min-h-screen bg-[#0B0B0E] pt-52">
+      <Header />
+      <StatsBar />
+
       <Sidebar
         selectedCategories={selectedCategories}
         onCategoryChange={handleCategoryChange}
@@ -126,24 +127,12 @@ export default function Dashboard() {
           setHasSearched(false);
         }}
         onTriggerGoogleSearch={handleGoogleSearch}
-        isGoogleMode={true} // Always Google Mode
+        isGoogleMode={true}
       />
 
       <main className="flex-1 pl-80 transition-all duration-300">
-        <Header />
-
         <div className="p-6">
-          {/* Controls */}
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <span className="text-blue-400">Explorador de Mercado</span>
-              <span className="text-sm font-normal text-zinc-500">(En vivo por Google)</span>
-
-              <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-                {filteredProspects.length} resultados
-              </span>
-            </h2>
-
+          <div className="mb-6 flex items-center justify-end">
             <div className="flex gap-4">
               <select
                 value={selectedPriority}
@@ -204,7 +193,7 @@ export default function Dashboard() {
 
               {/* Content */}
               {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 max-w-5xl mx-auto">
                   {filteredProspects.length > 0 ? (
                     filteredProspects.map((prospect, index) => (
                       <ProspectCard

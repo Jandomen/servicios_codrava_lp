@@ -50,23 +50,28 @@ export function Sidebar({
     return (
         <aside
             className={cn(
-                "fixed left-0 top-0 z-40 h-screen w-80 border-r border-[#D4AF37]/20 bg-[#0B0B0E] transition-transform shadow-[4px_0_24px_rgba(0,0,0,0.5)]",
+                "fixed left-0 top-52 z-40 h-[calc(100vh-13rem)] w-80 border-r border-[#D4AF37]/20 bg-[#0B0B0E] transition-transform shadow-[4px_0_24px_rgba(0,0,0,0.5)]",
                 !isOpen && "-translate-x-full"
             )}
         >
             <div className="flex h-full flex-col px-4 py-8">
-                <div className="mb-8 px-2 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-[#D4AF37]" />
-                    <h2 className="text-xl font-bold text-white tracking-widest">
-                        SCANNER <span className="text-[#D4AF37]">AI</span>
-                    </h2>
+                <div className="mb-8 px-2 flex items-center gap-3">
+                    <div className="relative h-10 w-10 overflow-hidden rounded-full border border-[#D4AF37]/30 shadow-gold p-1 bg-black shrink-0">
+                        <img src="/logo.png" alt="Codrava Logo" className="h-full w-full object-contain" />
+                    </div>
+                    <div className="flex flex-col">
+                        <h2 className="text-lg font-bold text-white tracking-widest drop-shadow-md leading-none">
+                            CODRAVA <span className="text-[#D4AF37]">LP</span>
+                        </h2>
+                        <span className="text-[8px] text-zinc-500 uppercase tracking-[0.15em] leading-tight">
+                            Ecosistema de Prospección
+                        </span>
+                    </div>
                 </div>
 
-                {/* Zona de Escaneo */}
+
                 <div className="mb-8 space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">
-                        {isGoogleMode ? "Buscador en Vivo (Google)" : "Zona de Escaneo"}
-                    </label>
+
                     <div className="relative group">
                         <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 group-focus-within:text-[#D4AF37] transition-colors ${isGoogleMode ? 'text-blue-500' : 'text-zinc-500'}`} />
                         <input
