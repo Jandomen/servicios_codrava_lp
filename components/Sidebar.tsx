@@ -15,23 +15,41 @@ export const CATEGORY_GROUPS = {
     "Legal & Financiero": [
         "Abogados", "Contadores", "Notarías", "Seguros", "Consultorías", "Bancos"
     ],
+    "Industria & Manufactura": [
+        "Fábricas", "Maquiladoras", "Parques Industriales", "Bodegas", "Almacenes", "Textil", "Acereras", "Químicas"
+    ],
+    "Logística & Transporte": [
+        "Transportistas", "Mudanzas", "Mensajería", "Paquetería", "Agencias Aduanales", "Renta de Camiones", "Fletes"
+    ],
     "Hogar & Construcción": [
-        "Ferreterías", "Arquitectos", "Mueblerías", "Plomeros", "Electricistas", "Decoración", "Jardinería"
+        "Ferreterías", "Arquitectos", "Mueblerías", "Plomeros", "Electricistas", "Decoración", "Jardinería", "Contratistas"
+    ],
+    "Entretenimiento & Ocio": [
+        "Cines", "Teatros", "Casinos", "Museos", "Boliches", "Parques de Diversiones", "Salones de Eventos"
     ],
     "Educación": [
-        "Escuelas", "Colegios", "Universidades", "Cursos de Idiomas", "Guarderías"
+        "Escuelas", "Colegios", "Universidades", "Cursos de Idiomas", "Guarderías", "Academias de Música"
     ],
     "Automotriz": [
-        "Talleres Mecánicos", "Refaccionarias", "Lavado de Autos", "Agencias de Autos"
+        "Talleres Mecánicos", "Refaccionarias", "Lavado de Autos", "Agencias de Autos", "Llanteras"
+    ],
+    "Moda & Retail": [
+        "Boutiques", "Zapaterías", "Joyerías", "Centros Comerciales", "Tiendas Departamentales", "Ropa Deportiva"
     ],
     "Belleza": [
-        "Salones de Belleza", "Barberías", "Spas", "Gimnasios", "Yoga"
+        "Salones de Belleza", "Barberías", "Spas", "Gimnasios", "Yoga", "Maquillaje"
+    ],
+    "Mascotas": [
+        "Tiendas de Mascotas", "Estéticas Caninas", "Escuelas Caninas", "Hoteles para Perros"
     ],
     "Tecnología & Servicios": [
-        "Marketing", "Desarrollo Web", "Electrónica", "Reparación Celulares", "Imprentas"
+        "Marketing", "Desarrollo Web", "Electrónica", "Reparación Celulares", "Imprentas", "Soporte Técnico"
+    ],
+    "Servicios Públicos & Gobierno": [
+        "Oficinas de Gobierno", "Correos", "Asociaciones Civiles", "Comisarías", "Bomberos"
     ],
     "Inmobiliaria & Turismo": [
-        "Inmobiliarias", "Hoteles", "Agencias de Viajes"
+        "Inmobiliarias", "Hoteles", "Agencias de Viajes", "Airbnb", "Hostales"
     ]
 };
 

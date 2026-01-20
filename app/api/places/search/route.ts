@@ -196,6 +196,36 @@ function formatCategory(type: string): string {
     if (t.includes("architect")) return "Arquitectos";
     if (t.includes("painter") || t.includes("decor")) return "Decoración";
 
+    // Industria
+    if (t.includes("factory") || t.includes("manufacturing") || t.includes("industrial")) return "Industria";
+    if (t.includes("warehouse") || t.includes("storage") || t.includes("wholesaler")) return "Bodegas";
+
+    // Logística
+    if (t.includes("moving_company") || t.includes("mover")) return "Mudanzas";
+    if (t.includes("logistics") || t.includes("freight") || t.includes("shipping")) return "Logística";
+    if (t.includes("post_office") || t.includes("courier")) return "Mensajería";
+
+    // Entretenimiento
+    if (t.includes("movie_theater") || t.includes("cinema")) return "Cines";
+    if (t.includes("casino")) return "Casinos";
+    if (t.includes("museum") || t.includes("art_gallery")) return "Museos";
+    if (t.includes("bowling")) return "Boliches";
+    if (t.includes("amusement_park")) return "Parques de Diversiones";
+
+    // Servicios Públicos & Gobierno
+    if (t.includes("local_government_office") || t.includes("city_hall")) return "Gobierno";
+    if (t.includes("fire_station")) return "Bomberos";
+    if (t.includes("police")) return "Comisarías";
+
+    // Mascotas
+    if (t.includes("pet_store")) return "Tiendas de Mascotas";
+
+    // Moda & Retail
+    if (t.includes("clothing_store") || t.includes("boutique")) return "Boutiques";
+    if (t.includes("shoe_store")) return "Zapaterías";
+    if (t.includes("jewelry_store")) return "Joyerías";
+    if (t.includes("shopping_mall")) return "Centros Comerciales";
+
     // Educación
     if (t.includes("school") || t.includes("education")) return "Escuelas";
     if (t.includes("university") || t.includes("college")) return "Universidades";
