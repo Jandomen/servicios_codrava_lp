@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Search, CheckSquare, Sparkles, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, CheckSquare, Sparkles, X, ChevronDown, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// ... (rest of imports/constants)
+
+
+
 
 // Organized Categories Structure
 export const CATEGORY_GROUPS = {
@@ -233,16 +238,25 @@ export function Sidebar({
                                                         key={cat}
                                                         className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent p-2 hover:bg-[#D4AF37]/5 hover:border-[#D4AF37]/20 transition-all ml-1"
                                                     >
-                                                        <div className="relative flex h-3.5 w-3.5 items-center justify-center rounded border border-zinc-700 bg-black group-hover:border-[#D4AF37]">
+                                                        <div className={cn(
+                                                            "relative flex h-3.5 w-3.5 items-center justify-center rounded border bg-black transition-colors",
+                                                            // Logic: If selected, Green Border & Glow. Else: Zinc border, Gold on hover.
+                                                            selectedCategories.includes(cat)
+                                                                ? "border-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+                                                                : "border-zinc-700 group-hover:border-[#D4AF37]"
+                                                        )}>
                                                             <input
                                                                 type="checkbox"
                                                                 checked={selectedCategories.includes(cat)}
                                                                 onChange={() => handleCategoryClick(cat)}
                                                                 className="peer absolute h-3.5 w-3.5 cursor-pointer opacity-0"
                                                             />
-                                                            <CheckSquare className="hidden h-2.5 w-2.5 text-green-500 peer-checked:block drop-shadow-[0_0_5px_rgba(34,197,94,1)]" />
+                                                            <Check className="hidden h-2.5 w-2.5 text-green-500 peer-checked:block stroke-[4]" />
                                                         </div>
-                                                        <span className="text-xs text-zinc-300 group-hover:text-white transition-colors">{cat}</span>
+                                                        <span className={cn(
+                                                            "text-xs transition-colors",
+                                                            selectedCategories.includes(cat) ? "text-green-500 font-medium" : "text-zinc-300 group-hover:text-white"
+                                                        )}>{cat}</span>
                                                     </label>
                                                 ))}
                                             </div>
