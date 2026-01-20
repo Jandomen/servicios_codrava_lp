@@ -26,6 +26,9 @@ export default function Dashboard() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Google Search Handler
+  const [lastFetchedQuery, setLastFetchedQuery] = useState("");
+
+  // Google Search Handler
   const handleGoogleSearch = async (query: string) => {
     let effectiveQuery = query.trim();
 
@@ -48,6 +51,7 @@ export default function Dashboard() {
     setLoading(true);
     setHasSearched(true);
     setErrorMsg("");
+    setLastFetchedQuery(query.trim()); // Store original user query
 
     // Clear filters to ensure new results are visible
     setSelectedCategories([]);
@@ -93,9 +97,16 @@ export default function Dashboard() {
       prospect.priority === selectedPriority;
 
     // Restore text filtering
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    const lastQ = lastFetchedQuery.toLowerCase().trim();
+
+    // We do NOT filter if the user's current query is what generated these results.
+    // We only filter if they have changed the text (refinement).
+    const isSameAsFetched = q === lastQ;
+
     const matchesSearch =
       !searchQuery ||
+      isSameAsFetched ||
       prospect.name.toLowerCase().includes(q) ||
       prospect.address.toLowerCase().includes(q) ||
       prospect.category.toLowerCase().includes(q);
