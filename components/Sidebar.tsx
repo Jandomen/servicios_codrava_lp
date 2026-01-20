@@ -249,9 +249,11 @@ export function Sidebar({
                                                                 type="checkbox"
                                                                 checked={selectedCategories.includes(cat)}
                                                                 onChange={() => handleCategoryClick(cat)}
-                                                                className="peer absolute h-3.5 w-3.5 cursor-pointer opacity-0"
+                                                                className="absolute inset-0 cursor-pointer opacity-0"
                                                             />
-                                                            <Check className="hidden h-2.5 w-2.5 text-green-500 peer-checked:block stroke-[4]" />
+                                                            {selectedCategories.includes(cat) && (
+                                                                <Check className="h-3 w-3 text-green-500 stroke-[3]" />
+                                                            )}
                                                         </div>
                                                         <span className={cn(
                                                             "text-xs transition-colors",
