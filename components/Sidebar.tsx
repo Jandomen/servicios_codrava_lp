@@ -1,30 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { Search, CheckSquare, Sparkles, X } from "lucide-react";
+import { Search, CheckSquare, Sparkles, X, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const CATEGORIES = [
-    // ... (This lines will be matched by context, I just need to add export)
-    // Salud & Bienestar
-    "Médicos", "Clínicas", "Dentistas", "Psicólogos", "Nutriólogos", "Veterinarios", "Farmacias", "Laboratorios",
-    // Gastronomía
-    "Restaurantes", "Cafeterías", "Bares", "Panaderías", "Pastelerías", "Catering", "Comida Rápida",
-    // Legal & Financiero
-    "Abogados", "Contadores", "Notarías", "Seguros", "Consultorías", "Bancos",
-    // Hogar & Construcción
-    "Ferreterías", "Arquitectos", "Mueblerías", "Plomeros", "Electricistas", "Decoración", "Jardinería",
-    // Educación
-    "Escuelas", "Colegios", "Universidades", "Cursos de Idiomas", "Guarderías",
-    // Automotriz
-    "Talleres Mecánicos", "Refaccionarias", "Lavado de Autos", "Agencias de Autos",
-    // Belleza
-    "Salones de Belleza", "Barberías", "Spas", "Gimnasios", "Yoga",
-    // Tecnología & Servicios
-    "Marketing", "Desarrollo Web", "Electrónica", "Reparación Celulares", "Imprentas",
-    // Inmobiliaria & Turismo
-    "Inmobiliarias", "Hoteles", "Agencias de Viajes"
-].sort();
+// Organized Categories Structure
+export const CATEGORY_GROUPS = {
+    "Salud & Bienestar": [
+        "Médicos", "Clínicas", "Dentistas", "Psicólogos", "Nutriólogos", "Veterinarios", "Farmacias", "Laboratorios"
+    ],
+    "Gastronomía": [
+        "Restaurantes", "Cafeterías", "Bares", "Panaderías", "Pastelerías", "Catering", "Comida Rápida"
+    ],
+    "Legal & Financiero": [
+        "Abogados", "Contadores", "Notarías", "Seguros", "Consultorías", "Bancos"
+    ],
+    "Hogar & Construcción": [
+        "Ferreterías", "Arquitectos", "Mueblerías", "Plomeros", "Electricistas", "Decoración", "Jardinería"
+    ],
+    "Educación": [
+        "Escuelas", "Colegios", "Universidades", "Cursos de Idiomas", "Guarderías"
+    ],
+    "Automotriz": [
+        "Talleres Mecánicos", "Refaccionarias", "Lavado de Autos", "Agencias de Autos"
+    ],
+    "Belleza": [
+        "Salones de Belleza", "Barberías", "Spas", "Gimnasios", "Yoga"
+    ],
+    "Tecnología & Servicios": [
+        "Marketing", "Desarrollo Web", "Electrónica", "Reparación Celulares", "Imprentas"
+    ],
+    "Inmobiliaria & Turismo": [
+        "Inmobiliarias", "Hoteles", "Agencias de Viajes"
+    ]
+};
+
+// Flattened list for backward compatibility if needed, or helper
+export const ALL_CATEGORIES = Object.values(CATEGORY_GROUPS).flat().sort();
+// Export CATEGORIES as ALL_CATEGORIES for external use (page.tsx)
+export const CATEGORIES = ALL_CATEGORIES;
 
 export function Sidebar({
     selectedCategories = [],
@@ -35,7 +49,7 @@ export function Sidebar({
     isGoogleMode,
     isOpen = false,
     onClose = () => { },
-    onSelectAll, // New prop
+    onSelectAll,
 }: {
     selectedCategories?: string[];
     onCategoryChange?: (category: string) => void;
@@ -48,6 +62,15 @@ export function Sidebar({
     onSelectAll?: () => void;
 }) {
     const [localSearch, localSetSearch] = useState("");
+    // By default, maybe keep first group open or all closed? Let's keep all closed for cleaner UI or first open.
+    // Let's keep all collapsed initially for that "clean" look.
+    const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+    const toggleGroup = (group: string) => {
+        setExpandedGroups(prev =>
+            prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]
+        );
+    };
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -67,12 +90,9 @@ export function Sidebar({
         onCategoryChange(cat);
 
         // 2. Auto-Search in Google Mode (if selecting, not deselecting)
-        // We assume if it's not currently selected, we are selecting it.
         const isSelecting = !selectedCategories.includes(cat);
         if (isGoogleMode && onTriggerGoogleSearch && isSelecting) {
-            onTriggerGoogleSearch(cat); // "Búsqueda en automático"
-            // Optional: Close sidebar on mobile to show results immediately?
-            // onClose?.(); 
+            onTriggerGoogleSearch(cat);
         }
     };
 
@@ -91,7 +111,7 @@ export function Sidebar({
                     "fixed left-0 top-0 h-full z-50 w-80 border-r border-[#D4AF37]/20 bg-[#0B0B0E] transition-transform duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.5)]",
                     // Desktop positioning (fixed under stats bar)
                     "md:top-52 md:h-[calc(100vh-13rem)] md:z-40",
-                    // Visibility logic: Hidden on mobile (unless open), Always visible on Desktop
+                    // Visibility logic
                     !isOpen && "-translate-x-full md:translate-x-0"
                 )}
             >
@@ -146,7 +166,7 @@ export function Sidebar({
                         INICIAR ESCANEO
                     </button>
 
-                    {/* Categorias */}
+                    {/* Categorias - Accordion Style */}
                     <div className="flex-1 overflow-hidden flex flex-col">
                         <div className="mb-4 flex items-center justify-between">
                             <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">
@@ -169,24 +189,49 @@ export function Sidebar({
                             </div>
                         </div>
 
-                        <div className="flex-1 space-y-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D4AF37]/20 hover:scrollbar-thumb-[#D4AF37]/50">
-                            {CATEGORIES.map((cat) => (
-                                <label
-                                    key={cat}
-                                    className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent p-2.5 hover:bg-[#D4AF37]/5 hover:border-[#D4AF37]/20 transition-all"
-                                >
-                                    <div className="relative flex h-4 w-4 items-center justify-center rounded border border-zinc-700 bg-black group-hover:border-[#D4AF37]">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedCategories.includes(cat)}
-                                            onChange={() => handleCategoryClick(cat)}
-                                            className="peer absolute h-4 w-4 cursor-pointer opacity-0"
-                                        />
-                                        <CheckSquare className="hidden h-3 w-3 text-[#D4AF37] peer-checked:block drop-shadow-[0_0_5px_rgba(212,175,55,1)]" />
+                        <div className="flex-1 space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D4AF37]/20 hover:scrollbar-thumb-[#D4AF37]/50">
+                            {Object.entries(CATEGORY_GROUPS).map(([groupName, items]) => {
+                                const isExpanded = expandedGroups.includes(groupName);
+                                // Check if any item in this group is selected to highlight the group header
+                                const hasSelection = items.some(item => selectedCategories.includes(item));
+
+                                return (
+                                    <div key={groupName} className="border border-zinc-800/50 rounded-lg overflow-hidden bg-zinc-900/20">
+                                        <button
+                                            onClick={() => toggleGroup(groupName)}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-3 text-left transition-colors hover:bg-zinc-800/50",
+                                                hasSelection ? "text-[#D4AF37]" : "text-zinc-400"
+                                            )}
+                                        >
+                                            <span className="text-xs font-bold uppercase tracking-wide">{groupName}</span>
+                                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                        </button>
+
+                                        {isExpanded && (
+                                            <div className="p-2 space-y-1 bg-black/20 border-t border-zinc-800/50">
+                                                {items.map((cat) => (
+                                                    <label
+                                                        key={cat}
+                                                        className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent p-2 hover:bg-[#D4AF37]/5 hover:border-[#D4AF37]/20 transition-all ml-1"
+                                                    >
+                                                        <div className="relative flex h-3.5 w-3.5 items-center justify-center rounded border border-zinc-700 bg-black group-hover:border-[#D4AF37]">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedCategories.includes(cat)}
+                                                                onChange={() => handleCategoryClick(cat)}
+                                                                className="peer absolute h-3.5 w-3.5 cursor-pointer opacity-0"
+                                                            />
+                                                            <CheckSquare className="hidden h-2.5 w-2.5 text-[#D4AF37] peer-checked:block drop-shadow-[0_0_5px_rgba(212,175,55,1)]" />
+                                                        </div>
+                                                        <span className="text-xs text-zinc-300 group-hover:text-white transition-colors">{cat}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">{cat}</span>
-                                </label>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
