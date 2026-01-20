@@ -200,8 +200,8 @@ export function MapComponent({ prospects, onSelect }: { prospects: Prospect[], o
                                     prospect.priority === "MEDIO" ? "#3B82F6" :   // Blue (Medio)
                                         "#22C55E",                                    // Green (Bajo)
                                 fillOpacity: 1,
-                                strokeWeight: 2,
-                                strokeColor: "#000000",
+                                strokeWeight: 3,
+                                strokeColor: "black",
                                 scale: 2,
                                 anchor: new google.maps.Point(12, 22),
                             }}
