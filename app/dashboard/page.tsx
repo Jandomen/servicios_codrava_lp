@@ -127,7 +127,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0B0B0E] pt-72 md:pt-52">
+    <div className="flex min-h-screen bg-[#0B0B0E] pt-44 md:pt-52">
       <Header onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
       <StatsBar />
 
