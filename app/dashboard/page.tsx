@@ -43,17 +43,17 @@ export default function Dashboard() {
     setLoading(true);
     setHasSearched(true);
     setErrorMsg("");
-    // Guardamos la zona de exploración para que el filtro local no esconda los resultados
+
     setLastFetchedQuery(effectiveLocation);
 
     try {
       const searchTasks = categoriesToSearch.map(async (cat) => {
         let finalQuery = "";
 
-        // CASO 1: CON CATEGORÍAS (Búsqueda Sincronizada)
+
         if (cat) {
           if (effectiveLocation) {
-            // Evitamos duplicar si el usuario ya puso el nicho o un "en"
+
             if (effectiveLocation.toLowerCase().includes(" en ") ||
               effectiveLocation.toLowerCase().includes(" near ") ||
               effectiveLocation.toLowerCase().includes(cat.toLowerCase().substring(0, 5))) {
@@ -65,11 +65,11 @@ export default function Dashboard() {
             finalQuery = cat;
           }
         }
-        // CASO 2: SIN CATEGORÍAS (Búsqueda Libre)
+
         else {
           finalQuery = effectiveLocation;
 
-          // Contexto automático para una mejor búsqueda en Google Maps
+
           const lowerQ = finalQuery.toLowerCase();
           const needsLocationContext = !lowerQ.includes(" en ") &&
             !lowerQ.includes(" near ") &&
@@ -133,9 +133,9 @@ export default function Dashboard() {
     }
   };
 
-  // Filter Logic (Client-side)
+
   const filteredProspects = googleProspects.filter((prospect) => {
-    // Local Filters for Google Results
+
     const matchesPriority =
       selectedPriority === "Todas las prioridades" ||
       prospect.priority === selectedPriority;
@@ -144,26 +144,22 @@ export default function Dashboard() {
     const hasSearch = q.length > 0;
     const hasCategories = selectedCategories.length > 0;
 
-    // 1. Si no hay filtros activos, mostrar todo
+
     if (!hasSearch && !hasCategories) return matchesPriority;
 
-    // 2. Inteligencia de Filtrado:
-    // Si el texto del buscador es LA MISMA ciudad que acabamos de escanear,
-    // NO filtramos localmente (para que no se escondan los resultados de otros lugares).
-    // Solo filtramos si el usuario escribe algo distinto para "buscar en su lista".
+
     const isScanLocation = q === lastFetchedQuery.toLowerCase().trim();
 
     const matchesSearch = hasSearch && (
-      isScanLocation || // Si es la zona de escaneo, no restringimos
+      isScanLocation ||
       prospect.name.toLowerCase().includes(q) ||
       prospect.category.toLowerCase().includes(q)
     );
 
-    // 3. Si hay categorías seleccionadas, verificar si coincide
+
     const matchesCategory = hasCategories && selectedCategories.includes(prospect.category);
 
-    // 4. Lógica de Acumulación:
-    // Mostramos si coincide con la búsqueda (que incluye la ciudad actual) O con la categoría
+
     if (hasSearch || hasCategories) {
       return matchesPriority && (matchesSearch || matchesCategory);
     }
@@ -179,7 +175,7 @@ export default function Dashboard() {
     );
   };
 
-  // Cálculo de estadísticas en tiempo real
+
   const stats = {
     total: googleProspects.length,
     urgent: googleProspects.filter(p => p.priority === "URGENTE").length,
@@ -257,7 +253,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Loading State */}
+
           {loading ? (
             <div className="flex h-screen max-h-96 flex-col items-center justify-center gap-4">
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
@@ -265,7 +261,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-              {/* Error Message */}
+
               {errorMsg && (
                 <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-500">
                   <AlertCircle className="h-5 w-5 shrink-0" />
@@ -273,7 +269,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Content */}
+
               {viewMode === "grid" ? (
                 <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 max-w-[1600px] mx-auto">
                   {filteredProspects.length > 0 ? (
@@ -311,7 +307,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Modal */}
+
       <ProspectModal
         prospect={selectedProspect}
         onClose={() => setSelectedProspect(null)}

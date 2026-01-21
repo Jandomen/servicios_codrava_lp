@@ -7,7 +7,6 @@ import { authOptions } from "@/lib/auth";
 
 export async function POST(req: Request) {
     try {
-        // 1. Verificar sesión y rol de administrador
         const session = await getServerSession(authOptions);
 
         if (!session || session.user?.role !== "admin") {
@@ -22,16 +21,13 @@ export async function POST(req: Request) {
 
         await dbConnect();
 
-        // 2. Verificar si el usuario ya existe
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return NextResponse.json({ error: "El usuario ya existe." }, { status: 400 });
         }
 
-        // 3. Hashear contraseña
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // 4. Crear usuario
         const newUser = await User.create({
             name,
             email: email.toLowerCase(),
@@ -69,6 +65,37 @@ export async function GET() {
         const users = await User.find({}).select("-password").sort({ createdAt: -1 });
 
         return NextResponse.json(users);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session || session.user?.role !== "admin") {
+            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const userId = searchParams.get("id");
+
+        if (!userId) {
+            return NextResponse.json({ error: "ID de usuario requerido" }, { status: 400 });
+        }
+
+        await dbConnect();
+
+        // Evitar que un admin se borre a sí mismo
+        const userToDelete = await User.findById(userId);
+        if (userToDelete && userToDelete.email === session.user.email) {
+            return NextResponse.json({ error: "No puedes eliminar tu propia cuenta." }, { status: 400 });
+        }
+
+        await User.findByIdAndDelete(userId);
+
+        return NextResponse.json({ success: true });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

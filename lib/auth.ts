@@ -30,7 +30,8 @@ export const authOptions = {
                                     name: user.name,
                                     email: user.email,
                                     role: user.role,
-                                    biometricEnabled: user.biometricEnabled
+                                    biometricEnabled: user.biometricEnabled,
+                                    exclusiveBiometric: user.exclusiveBiometric
                                 };
                             }
                         }
@@ -51,6 +52,11 @@ export const authOptions = {
                     throw new Error("Usuario no encontrado");
                 }
 
+                // BLOQUEO EXCLUSIVO: Si tiene la huella como única vía, bloqueamos contraseña
+                if (user.exclusiveBiometric) {
+                    throw new Error("Acceso exclusivo por HUELLA activado. La contraseña ha sido desactivada.");
+                }
+
                 const isValid = await bcrypt.compare(credentials.password, user.password);
 
                 if (!isValid) {
@@ -62,7 +68,8 @@ export const authOptions = {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    biometricEnabled: user.biometricEnabled
+                    biometricEnabled: user.biometricEnabled,
+                    exclusiveBiometric: user.exclusiveBiometric
                 };
             }
         })
@@ -73,6 +80,7 @@ export const authOptions = {
                 token.role = user.role;
                 token.id = user.id;
                 token.biometricEnabled = user.biometricEnabled;
+                token.exclusiveBiometric = user.exclusiveBiometric;
             }
             if (trigger === "update" && session) {
                 token = { ...token, ...session };
@@ -84,6 +92,7 @@ export const authOptions = {
                 session.user.role = token.role;
                 session.user.id = token.id;
                 session.user.biometricEnabled = token.biometricEnabled;
+                session.user.exclusiveBiometric = token.exclusiveBiometric;
             }
             return session;
         }

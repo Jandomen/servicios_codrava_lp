@@ -87,6 +87,25 @@ export default function AdminUsersPage() {
         }
     };
 
+    const handleDeleteUser = async (userId: string) => {
+        if (!confirm("¿Estás seguro de que deseas eliminar este usuario?")) return;
+
+        try {
+            const res = await fetch(`/api/admin/users?id=${userId}`, {
+                method: "DELETE"
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Error al eliminar");
+            }
+
+            fetchUsers();
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
+
     if (session?.user?.role !== "admin") {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
@@ -147,7 +166,7 @@ export default function AdminUsersPage() {
                             <tr className="border-b border-zinc-800 bg-zinc-900/30">
                                 <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Usuario</th>
                                 <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Rol</th>
-                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Empresa</th>
+                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800/50">
@@ -187,6 +206,17 @@ export default function AdminUsersPage() {
                                     </td>
                                     <td className="px-6 py-4 text-sm text-zinc-400">
                                         {user.company || "N/A"}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        {user.email !== session?.user?.email && (
+                                            <button
+                                                onClick={() => handleDeleteUser(user._id)}
+                                                className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                                title="Eliminar usuario"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

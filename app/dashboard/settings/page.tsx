@@ -117,12 +117,17 @@ export default function SettingsPage() {
                             <div className="flex items-center justify-between p-5 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
                                 <div>
                                     <p className="text-sm font-bold text-white">Autenticación Biométrica</p>
-                                    <p className="text-xs text-zinc-500">Activa o desactiva el uso de biometría en este perfil.</p>
+                                    <p className="text-xs text-zinc-500">
+                                        {session?.user?.exclusiveBiometric
+                                            ? "Modo exclusivo activado (Contraseña desactivada)"
+                                            : "Activa o desactiva el uso de biometría en este perfil."}
+                                    </p>
                                 </div>
                                 <button
+                                    disabled={session?.user?.exclusiveBiometric}
                                     onClick={() => setBiometricEnabled(!biometricEnabled)}
                                     className={`w-12 h-6 rounded-full transition-all duration-300 relative ${biometricEnabled ? "bg-[#D4AF37]" : "bg-zinc-700"
-                                        }`}
+                                        } ${session?.user?.exclusiveBiometric ? "opacity-50 cursor-not-allowed" : ""}`}
                                 >
                                     <div className={`absolute top-1 w-4 h-4 bg-black rounded-full transition-all duration-300 ${biometricEnabled ? "left-7" : "left-1"
                                         }`} />
@@ -148,15 +153,45 @@ export default function SettingsPage() {
                                     )}
                                 </button>
                             ) : (
-                                <div className="flex items-center gap-4 p-5 bg-green-500/10 border border-green-500/20 rounded-2xl">
-                                    <div className="p-2 bg-green-500/20 rounded-lg">
-                                        <Check className="w-5 h-5 text-green-500" />
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4 p-5 bg-green-500/10 border border-green-500/20 rounded-2xl">
+                                        <div className="p-2 bg-green-500/20 rounded-lg">
+                                            <Check className="w-5 h-5 text-green-500" />
+                                        </div>
+                                        <div>
+                                            <span className="text-sm font-bold text-green-400 block">Huella Registrada</span>
+                                            <span className="text-xs text-green-500/70">Tu dispositivo está vinculado correctamente.</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span className="text-sm font-bold text-green-400 block">Huella Registrada</span>
-                                        <span className="text-xs text-green-500/70">Tu dispositivo está vinculado correctamente.</span>
-                                    </div>
+
+                                    {session?.user?.exclusiveBiometric && (
+                                        <div className="flex items-center gap-3 p-4 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-2xl">
+                                            <Shield className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                                            <p className="text-[11px] text-[#D4AF37]/80 leading-tight">
+                                                **MODO OWNER ACTIVO**: Tu acceso ahora es exclusivo por huella. Nadie con tu contraseña podrá ingresar.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
+                            )}
+
+                            {/* Link a Gestión de Usuarios (Admin only) */}
+                            {session?.user?.role === "admin" && (
+                                <Link
+                                    href="/dashboard/admin/users"
+                                    className="flex items-center justify-between p-5 bg-zinc-900/30 hover:bg-zinc-800/50 rounded-2xl border border-zinc-800 transition-all group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-2 bg-blue-500/10 rounded-xl">
+                                            <User className="w-5 h-5 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">Gestionar Usuarios</p>
+                                            <p className="text-xs text-zinc-500">Elimina o crea cuentas antes de la entrega.</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:translate-x-1 transition-transform" />
+                                </Link>
                             )}
                         </div>
                     </div>

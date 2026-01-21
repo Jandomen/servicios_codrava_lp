@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
             });
 
             user.biometricEnabled = true;
+            user.exclusiveBiometric = true;
             user.currentChallenge = undefined; // Limpiamos el challenge
             await user.save();
 

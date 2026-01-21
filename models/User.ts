@@ -31,6 +31,10 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    exclusiveBiometric: {
+        type: Boolean,
+        default: false,
+    },
     // Credenciales WebAuthn reales
     authenticators: [{
         credentialID: Buffer,

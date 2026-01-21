@@ -6,12 +6,14 @@ declare module "next-auth" {
         id: string;
         role: string;
         biometricEnabled: boolean;
+        exclusiveBiometric: boolean;
     }
     interface Session {
         user: {
             id: string;
             role: string;
             biometricEnabled: boolean;
+            exclusiveBiometric: boolean;
         } & DefaultSession["user"];
     }
 
@@ -19,6 +21,7 @@ declare module "next-auth" {
         id: string;
         role: string;
         biometricEnabled: boolean;
+        exclusiveBiometric: boolean;
     }
 }
 
@@ -27,5 +30,6 @@ declare module "next-auth/jwt" {
         id: string;
         role: string;
         biometricEnabled: boolean;
+        exclusiveBiometric: boolean;
     }
 }
