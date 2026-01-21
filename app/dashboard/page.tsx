@@ -66,12 +66,18 @@ export default function Dashboard() {
       console.log("📦 FRONTEND: Datos parseados:", data);
 
       if (data.success) {
-        setGoogleProspects(data.data);
+        // Acumular resultados: Filtrar duplicados basándose en la dirección o ID
+        setGoogleProspects(prev => {
+          const existingIds = new Set(prev.map(p => p.id || p.address));
+          const newResults = data.data.filter((p: Prospect) => !existingIds.has(p.id || p.address));
+          return [...prev, ...newResults];
+        });
+
         if (data.data.length === 0) {
           console.warn("⚠️ FRONTEND: 0 resultados encontrados.");
           setErrorMsg(`Google no encontró resultados para: "${effectiveQuery}".`);
         } else {
-          console.log(`✅ FRONTEND: ${data.data.length} prospectos cargados.`);
+          console.log(`✅ FRONTEND: ${data.data.length} prospectos nuevos cargados.`);
         }
       } else {
         console.error("❌ FRONTEND: API Error:", data.error);
@@ -111,6 +117,8 @@ export default function Dashboard() {
       selectedCategories.length === 0 ||
       selectedCategories.includes(prospect.category);
 
+    // IMPORTANTE: Si acabamos de hacer una búsqueda específica de una categoría, 
+    // queremos que se vea aunque no esté en los filtros antiguos.
     return matchesPriority && matchesSearch && matchesCategory;
   });
 
