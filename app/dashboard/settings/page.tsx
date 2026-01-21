@@ -11,10 +11,12 @@ import {
     ChevronRight,
     Check,
     AlertCircle,
-    Loader2
+    Loader2,
+    ArrowLeft
 } from "lucide-react";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 export default function SettingsPage() {
     const { data: session, update: updateSession } = useSession();
@@ -66,10 +68,18 @@ export default function SettingsPage() {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-8 text-center"
+                className="mb-8 flex items-center gap-4"
             >
-                <h1 className="text-3xl font-bold text-white mb-2">Seguridad y Biometría</h1>
-                <p className="text-zinc-500">Gestiona el acceso ultra-seguro a tu cuenta Codrava.</p>
+                <Link
+                    href="/dashboard"
+                    className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-700 transition-all group"
+                >
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                </Link>
+                <div className="text-left">
+                    <h1 className="text-3xl font-bold text-white mb-1">Seguridad y Biometría</h1>
+                    <p className="text-zinc-500 text-sm">Gestiona el acceso ultra-seguro a tu cuenta Codrava.</p>
+                </div>
             </motion.div>
 
             <div className="space-y-6">
