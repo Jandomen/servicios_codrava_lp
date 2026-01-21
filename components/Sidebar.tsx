@@ -214,7 +214,7 @@ export function Sidebar({
                     {/* CATEGORIES */}
                     <div className="mb-3">
                         <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold mb-4 block">
-                            Filtros Inteligentes
+                            Categorías
                         </span>
                     </div>
                     <div className="flex-1 overflow-y-auto space-y-2 pr-1">
