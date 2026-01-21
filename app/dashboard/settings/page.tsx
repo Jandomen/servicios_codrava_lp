@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     User,
     Shield,
@@ -12,7 +12,10 @@ import {
     Check,
     AlertCircle,
     Loader2,
-    ArrowLeft
+    ArrowLeft,
+    Trash2,
+    Eye,
+    ShieldAlert
 } from "lucide-react";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useSession } from "next-auth/react";
@@ -23,6 +26,49 @@ export default function SettingsPage() {
     const [biometricEnabled, setBiometricEnabled] = useState(session?.user?.biometricEnabled || false);
     const [registering, setRegistering] = useState(false);
     const [error, setError] = useState("");
+    const [logs, setLogs] = useState<any[]>([]);
+    const [loadingLogs, setLoadingLogs] = useState(true);
+
+    useEffect(() => {
+        fetchLogs();
+    }, []);
+
+    const fetchLogs = async () => {
+        try {
+            const res = await fetch("/api/security/logs");
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setLogs(data);
+            }
+        } catch (err) {
+            console.error("Error fetching logs:", err);
+        } finally {
+            setLoadingLogs(false);
+        }
+    };
+
+    const handleMarkAsRead = async (logId: string) => {
+        try {
+            await fetch("/api/security/logs", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ logId }),
+            });
+            setLogs(logs.map(l => l._id === logId ? { ...l, read: true } : l));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleClearLogs = async () => {
+        if (!confirm("¿Seguro que quieres borrar todo el historial de alertas?")) return;
+        try {
+            await fetch("/api/security/logs", { method: "DELETE" });
+            setLogs([]);
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const handleRegisterBiometry = async () => {
         setRegistering(true);
@@ -194,6 +240,89 @@ export default function SettingsPage() {
                                 </Link>
                             )}
                         </div>
+                    </div>
+                </motion.div>
+
+                {/* Intrusion Alerts Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-black/40 backdrop-blur-xl border border-zinc-800 rounded-2xl p-8 relative overflow-hidden"
+                >
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-red-500/10 rounded-2xl">
+                                <ShieldAlert className="w-8 h-8 text-red-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Centinela de Seguridad</h2>
+                                <p className="text-sm text-zinc-500">Intentos de intrusión detectados.</p>
+                            </div>
+                        </div>
+                        {logs.length > 0 && (
+                            <button
+                                onClick={handleClearLogs}
+                                className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
+                                title="Limpiar historial"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="space-y-3">
+                        {loadingLogs ? (
+                            <div className="flex justify-center py-8">
+                                <Loader2 className="w-6 h-6 animate-spin text-zinc-600" />
+                            </div>
+                        ) : logs.length === 0 ? (
+                            <div className="text-center py-8 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
+                                <Shield className="w-12 h-12 text-green-500/20 mx-auto mb-3" />
+                                <p className="text-sm text-zinc-500">Sin incidentes detectados recientemente.</p>
+                                <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-widest">Sistema Limpio</p>
+                            </div>
+                        ) : (
+                            <AnimatePresence>
+                                {logs.map((log) => (
+                                    <motion.div
+                                        key={log._id}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className={`p-4 rounded-xl border flex items-center justify-between transition-all ${log.read
+                                            ? "bg-zinc-900/20 border-zinc-800/50"
+                                            : "bg-red-500/5 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.05)]"
+                                            }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${log.read ? "bg-zinc-700" : "bg-red-500 animate-pulse"}`} />
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="text-sm font-bold text-white">Intento de Acceso (Pass)</p>
+                                                    <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded border border-red-500/20 uppercase font-black">Bloqueado</span>
+                                                </div>
+                                                <p className="text-xs text-zinc-400 mb-1">{log.details}</p>
+                                                <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-mono">
+                                                    <span>IP: {log.ip}</span>
+                                                    <span>•</span>
+                                                    <span>{new Date(log.timestamp).toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {!log.read && (
+                                            <button
+                                                onClick={() => handleMarkAsRead(log._id)}
+                                                className="p-2 bg-zinc-800/50 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                                                title="Marcar como visto"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        )}
                     </div>
                 </motion.div>
 

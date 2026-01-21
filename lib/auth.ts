@@ -1,6 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import SecurityLog from "@/models/SecurityLog";
 import bcrypt from "bcryptjs";
 import { jwtVerify } from "jose";
 
@@ -13,7 +14,7 @@ export const authOptions = {
                 password: { label: "Password", type: "password" },
                 biometricToken: { label: "Biometric Token", type: "text" }
             },
-            async authorize(credentials) {
+            async authorize(credentials, _req: any) {
                 await dbConnect();
 
                 // Caso 1: Login Biométrico
@@ -54,6 +55,16 @@ export const authOptions = {
 
                 // BLOQUEO EXCLUSIVO: Si tiene la huella como única vía, bloqueamos contraseña
                 if (user.exclusiveBiometric) {
+                    // REGISTRAR INTENTO DE INTRUSIÓN
+                    const ip = _req.headers?.['x-forwarded-for'] || _req.socket?.remoteAddress;
+                    await SecurityLog.create({
+                        userId: user._id,
+                        action: 'INTRUSION_ATTEMPT',
+                        details: `Intento de acceso con contraseña desde ${ip}`,
+                        ip,
+                        userAgent: _req.headers?.['user-agent']
+                    });
+
                     throw new Error("Acceso exclusivo por HUELLA activado. La contraseña ha sido desactivada.");
                 }
 
