@@ -31,10 +31,21 @@ export default function Dashboard() {
   // Google Search Handler
   const handleGoogleSearch = async (query: string) => {
     let effectiveQuery = query.trim();
+    const currentBoxText = searchQuery.trim();
 
     // 1. Manejo de escaneo vacío
     if (!effectiveQuery) {
-      effectiveQuery = "Negocios Recomendados en esta zona";
+      if (currentBoxText) effectiveQuery = currentBoxText;
+      else effectiveQuery = "Negocios Recomendados en esta zona";
+    }
+
+    // 2. Combinación Inteligente: Si lanzamos una categoría desde la lista 
+    // y tenemos un lugar escrito en el buscador, los unimos.
+    else if (currentBoxText && effectiveQuery !== currentBoxText) {
+      // Evitamos redundancia: si ya dice "en", no lo agregamos
+      if (!effectiveQuery.toLowerCase().includes(" en ") && !effectiveQuery.toLowerCase().includes(" near ")) {
+        effectiveQuery = `${effectiveQuery} en ${currentBoxText}`;
+      }
     }
 
     else if (
@@ -98,28 +109,32 @@ export default function Dashboard() {
       selectedPriority === "Todas las prioridades" ||
       prospect.priority === selectedPriority;
 
-    // Restore text filtering
     const q = searchQuery.toLowerCase().trim();
-    const lastQ = lastFetchedQuery.toLowerCase().trim();
+    const hasSearch = q.length > 0;
+    const hasCategories = selectedCategories.length > 0;
 
-    // We do NOT filter if the user's current query is what generated these results.
-    // We only filter if they have changed the text (refinement).
-    const isSameAsFetched = q === lastQ;
+    // 1. Si no hay filtros activos, mostrar todo
+    if (!hasSearch && !hasCategories) return matchesPriority;
 
-    const matchesSearch =
-      !searchQuery ||
-      isSameAsFetched ||
+    // 2. Si hay búsqueda de texto, verificar si coincide
+    const matchesSearch = hasSearch && (
       prospect.name.toLowerCase().includes(q) ||
       prospect.address.toLowerCase().includes(q) ||
-      prospect.category.toLowerCase().includes(q);
+      prospect.category.toLowerCase().includes(q)
+    );
 
-    const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.includes(prospect.category);
+    // 3. Si hay categorías seleccionadas, verificar si coincide
+    const matchesCategory = hasCategories && selectedCategories.includes(prospect.category);
 
-    // IMPORTANTE: Si acabamos de hacer una búsqueda específica de una categoría, 
-    // queremos que se vea aunque no esté en los filtros antiguos.
-    return matchesPriority && matchesSearch && matchesCategory;
+    // 4. Lógica de Acumulación (OR): 
+    // Si el usuario busca "Tacos" y tiene marcada la casilla "Abogados",
+    // queremos que vea AMBOS resultados acumulados.
+    if (hasSearch && hasCategories) {
+      return matchesPriority && (matchesSearch || matchesCategory);
+    }
+
+    // 5. Si solo hay uno de los dos filtros, aplicar ese
+    return matchesPriority && (matchesSearch || matchesCategory);
   });
 
   const handleCategoryChange = (category: string) => {
