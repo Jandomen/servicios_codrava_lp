@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Plataforma inteligente de prospección empresarial"
 };
 
+import { Providers } from "@/components/Providers";
+
 export default function RootLayout({
   children
 }: {
@@ -19,7 +21,7 @@ export default function RootLayout({
       <body
         className={`${inter.className} bg-[#0B0B0E] text-[#EDEDED] antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

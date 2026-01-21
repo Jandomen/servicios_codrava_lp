@@ -1,11 +1,16 @@
+"use client";
 
-import { RefreshCw, Menu } from "lucide-react";
+import { RefreshCw, Menu, User, LogOut, Settings, Users } from "lucide-react";
+import Link from "next/link";
+import { signOut, useSession } from "next-auth/react";
 
 export function Header({
     onMenuToggle
 }: {
     onMenuToggle?: () => void;
 }) {
+    const { data: session } = useSession();
+
     return (
         <header className="fixed top-0 left-0 right-0 z-50 flex h-20 w-full items-center justify-between border-b border-[#D4AF37]/20 bg-[#0B0B0E]/95 px-6 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
             <div className="flex items-center gap-3">
@@ -15,26 +20,56 @@ export function Header({
                 >
                     <Menu className="h-6 w-6" />
                 </button>
-                <div className="relative h-12 w-12 overflow-hidden rounded-full border border-[#D4AF37]/30 shadow-gold p-1 bg-black shrink-0">
-                    <img src="/logo.png" alt="Codrava Logo" className="h-full w-full object-contain" />
-                </div>
-                <div className="flex flex-col">
-                    <h1 className="text-xl font-bold text-white tracking-widest drop-shadow-md">
-                        CODRAVA <span className="text-[#D4AF37]">LP</span>
-                    </h1>
-                    <span className="text-[10px] text-zinc-400 uppercase tracking-[0.2em]">
-                        Ecosistema de Prospección
-                    </span>
-                </div>
+                <Link href="/dashboard" className="flex items-center gap-3 group">
+                    <div className="relative h-12 w-12 overflow-hidden rounded-full border border-[#D4AF37]/30 shadow-gold p-1 bg-black shrink-0 transition-transform group-hover:scale-105">
+                        <img src="/logo.png" alt="Codrava Logo" className="h-full w-full object-contain" />
+                    </div>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold text-white tracking-widest drop-shadow-md">
+                            CODRAVA <span className="text-[#D4AF37]">LP</span>
+                        </h1>
+                        <span className="text-[10px] text-zinc-400 uppercase tracking-[0.2em] group-hover:text-zinc-300 transition-colors">
+                            Ecosistema de Prospección
+                        </span>
+                    </div>
+                </Link>
             </div>
 
-            <div className="flex items-center gap-6">
-                <button className="group flex items-center gap-2 rounded-lg border border-[#D4AF37]/30 bg-black/50 px-4 py-2 text-sm font-bold text-[#D4AF37] transition-all hover:bg-[#D4AF37] hover:text-black hover:shadow-gold">
+            <div className="flex items-center gap-4 md:gap-6">
+                <button className="group flex items-center gap-2 rounded-lg border border-zinc-800 bg-black/50 px-4 py-2 text-sm font-bold text-zinc-400 transition-all hover:border-[#D4AF37]/30 hover:text-[#D4AF37]">
                     <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
-                    <span className="max-sm:hidden">Actualizar Sistema</span>
+                    <span className="max-sm:hidden">Sincronizar</span>
                 </button>
 
+                <div className="h-8 w-px bg-zinc-800 mx-2 hidden sm:block" />
 
+                <div className="flex items-center gap-2">
+                    {session?.user?.role === "admin" && (
+                        <Link
+                            href="/dashboard/admin/users"
+                            className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all group"
+                            title="Gestionar Usuarios"
+                        >
+                            <Users className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+                        </Link>
+                    )}
+
+                    <Link
+                        href="/dashboard/settings"
+                        className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all group"
+                        title="Configuración"
+                    >
+                        <Settings className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
+                    </Link>
+
+                    <button
+                        onClick={() => signOut({ callbackUrl: "/login" })}
+                        className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-red-500 hover:border-red-500/30 transition-all"
+                        title="Cerrar Sesión"
+                    >
+                        <LogOut className="h-5 w-5" />
+                    </button>
+                </div>
             </div>
         </header>
     );
