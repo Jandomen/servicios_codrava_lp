@@ -32,19 +32,19 @@ export async function POST(req: NextRequest) {
             user = await User.findOne({ email });
         } else {
             // Login por descubrimiento: buscar usuario que tenga esta credencial
-            // El response.id es el credentialID en base64url
+            // Convertimos el ID de base64url a Buffer para la consulta en MongoDB
+            const credentialIDBuffer = Buffer.from(response.id, 'base64url');
             user = await User.findOne({
-                "authenticators.credentialID": response.id
+                "authenticators.credentialID": credentialIDBuffer
             });
         }
 
-        await dbConnect();
         if (!user) {
             return NextResponse.json({ error: "Usuario o biometría no encontrados" }, { status: 404 });
         }
 
         const authenticator = user.authenticators.find(
-            (auth: any) => auth.credentialID === response.id
+            (auth: any) => Buffer.from(auth.credentialID).toString('base64url') === response.id
         );
 
         if (!authenticator) {
