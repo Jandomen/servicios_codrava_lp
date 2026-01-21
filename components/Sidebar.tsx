@@ -136,7 +136,7 @@ export function Sidebar({
         <>
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/60 md:hidden"
+                    className="fixed inset-0 z-40 bg-black/60 lg:hidden"
                     onClick={onClose}
                 />
             )}
@@ -144,14 +144,14 @@ export function Sidebar({
             <aside
                 className={cn(
                     "fixed left-0 top-0 z-50 h-full w-80 bg-[#0B0B0E] border-r border-[#D4AF37]/20 transition-transform",
-                    "md:top-52 md:h-[calc(100vh-13rem)] md:z-40",
-                    !isOpen && "-translate-x-full md:translate-x-0"
+                    "lg:top-52 lg:h-[calc(100vh-13rem)] lg:z-40",
+                    !isOpen && "-translate-x-full lg:translate-x-0"
                 )}
             >
                 <div className="flex h-full flex-col px-4 py-6">
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 md:hidden text-zinc-500"
+                        className="absolute top-4 right-4 lg:hidden text-zinc-500"
                     >
                         <X />
                     </button>

@@ -18,19 +18,14 @@ export default function Dashboard() {
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Modal State
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
 
-  // Filters State
   const [selectedPriority, setSelectedPriority] = useState("Todas las prioridades");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Google Search Handler
   const [lastFetchedQuery, setLastFetchedQuery] = useState("");
 
-  // Google Search Handler
   const handleGoogleSearch = async (query: string) => {
-    // baseText: Priorizamos la entrada directa o lo que hay en el cuadro
     const currentBoxText = searchQuery.trim();
     const effectiveLocation = query.trim() || currentBoxText;
     const categoriesToSearch = selectedCategories.length > 0 ? selectedCategories : [null];
@@ -209,7 +204,7 @@ export default function Dashboard() {
         isGoogleMode={true}
       />
 
-      <main className="flex-1 px-4 pl-0 transition-all duration-300 md:pl-80 md:px-0">
+      <main className="flex-1 px-4 pl-0 transition-all duration-300 lg:pl-80 lg:px-0">
         <div className="p-4 md:p-6">
           <div className="mb-6 flex items-center justify-end">
             <div className="flex gap-4">
@@ -271,7 +266,7 @@ export default function Dashboard() {
 
 
               {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 max-w-[1600px] mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 max-w-[1600px] mx-auto">
                   {filteredProspects.length > 0 ? (
                     filteredProspects.map((prospect, index) => (
                       <ProspectCard

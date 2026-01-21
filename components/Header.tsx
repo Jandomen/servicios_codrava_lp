@@ -16,7 +16,7 @@ export function Header({
             <div className="flex items-center gap-3">
                 <button
                     onClick={onMenuToggle}
-                    className="mr-2 text-zinc-400 hover:text-white md:hidden"
+                    className="mr-2 text-zinc-400 hover:text-white lg:hidden"
                 >
                     <Menu className="h-6 w-6" />
                 </button>
