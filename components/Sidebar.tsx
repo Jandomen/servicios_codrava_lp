@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Search,
     X,
     ChevronDown,
     ChevronRight,
-    Check
+    Check,
+    Radar,
+    Trash2,
+    CornerDownLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/* =========================
-   CATEGORÍAS
-========================= */
+
 
 export const CATEGORY_GROUPS = {
     "Salud & Bienestar": [
@@ -92,7 +93,8 @@ export function Sidebar({
     isGoogleMode = false,
     isOpen = false,
     onClose = () => { },
-    onSelectAll
+    onSelectAll,
+    searchQuery = ""
 }: {
     selectedCategories?: string[];
     onCategoryChange?: (category: string) => void;
@@ -103,9 +105,14 @@ export function Sidebar({
     isOpen?: boolean;
     onClose?: () => void;
     onSelectAll?: () => void;
+    searchQuery?: string;
 }) {
-    const [localSearch, setLocalSearch] = useState("");
+    const [localSearch, setLocalSearch] = useState(searchQuery);
     const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+    useEffect(() => {
+        setLocalSearch(searchQuery);
+    }, [searchQuery]);
 
     const toggleGroup = (group: string) => {
         setExpandedGroups(prev =>
@@ -149,26 +156,67 @@ export function Sidebar({
                         <X />
                     </button>
 
-                    {/* SEARCH */}
-                    <div className="mb-6 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                        <input
-                            value={localSearch}
-                            onChange={(e) => {
-                                setLocalSearch(e.target.value);
-                                onSearch(e.target.value);
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" && onTriggerGoogleSearch) {
-                                    onTriggerGoogleSearch(localSearch);
-                                }
-                            }}
-                            placeholder="Buscar…"
-                            className="w-full rounded-lg bg-black border border-zinc-800 pl-10 pr-3 py-2 text-sm text-white"
-                        />
+                    {/* SEARCH HEADER */}
+                    <div className="mb-4">
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-3 block">
+                            BUSCADOR EN VIVO
+                        </span>
+
+                        <div className="relative mb-3 group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-[#D4AF37] transition-colors" />
+                            <input
+                                value={localSearch}
+                                onChange={(e) => {
+                                    setLocalSearch(e.target.value);
+                                    onSearch(e.target.value);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && onTriggerGoogleSearch) {
+                                        onTriggerGoogleSearch(localSearch);
+                                    }
+                                }}
+                                placeholder="Zona o nicho… (Ej. Toluca, Restaurantes en Roma)"
+                                className="w-full rounded-lg bg-black/60 border border-zinc-800 pl-10 pr-16 py-2.5 text-sm text-white focus:border-[#D4AF37]/50 transition-all outline-none"
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] text-zinc-600 font-medium select-none pointer-events-none">
+                                <CornerDownLeft className="h-3 w-3" />
+                                Enter
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => onTriggerGoogleSearch && onTriggerGoogleSearch(localSearch)}
+                            className="w-full py-3.5 mb-4 bg-[#D4AF37] rounded-xl text-xs font-black text-black hover:bg-[#B8962E] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        >
+                            <Search className="w-4 h-4" />
+                            INICIAR ESCANEO
+                        </button>
+
+                        <div className="flex justify-between items-center px-1 mb-2">
+                            <button
+                                onClick={onSelectAll}
+                                className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-white transition-colors"
+                            >
+                                Seleccionar Todo
+                            </button>
+                            <button
+                                onClick={onClear}
+                                className="text-[10px] uppercase tracking-wider text-red-500/70 hover:text-red-500 transition-colors flex items-center gap-1"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                                Limpiar
+                            </button>
+                        </div>
                     </div>
 
+                    <div className="h-px bg-zinc-800/50 mb-6" />
+
                     {/* CATEGORIES */}
+                    <div className="mb-3">
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold mb-4 block">
+                            Filtros Inteligentes
+                        </span>
+                    </div>
                     <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                         {Object.entries(CATEGORY_GROUPS).map(([group, items]) => {
                             const isExpanded = expandedGroups.includes(group);
@@ -235,11 +283,7 @@ export function Sidebar({
                         })}
                     </div>
 
-                    {/* FOOTER */}
-                    <div className="mt-4 flex justify-between text-xs">
-                        <button onClick={onSelectAll} className="text-[#D4AF37]">Todo</button>
-                        <button onClick={onClear} className="text-zinc-500">Limpiar</button>
-                    </div>
+                    {/* FOOTER - Removed since buttons moved up */}
                 </div>
             </aside>
         </>

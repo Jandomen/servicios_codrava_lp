@@ -1,14 +1,18 @@
 import { RefreshCw } from "lucide-react";
 
-export function StatsBar() {
+export function StatsBar({
+    stats = { total: 0, urgent: 0, medium: 0, withoutWebsite: 0 }
+}: {
+    stats?: { total: number; urgent: number; medium: number; withoutWebsite: number }
+}) {
     return (
         <div className="fixed top-16 md:top-24 left-0 right-0 z-30 border-b border-[#D4AF37]/20 bg-[#0B0B0E]/95 backdrop-blur-xl transition-all">
             <div className="flex w-full items-center justify-between px-2 py-2 md:px-6 md:py-4">
                 <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
-                    <StatCard label="Total Prospectos" value="124" />
-                    <StatCard label="Prioridad Urgente" value="12" color="text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                    <StatCard label="Prioridad Alta" value="45" color="text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]" />
-                    <StatCard label="Sin Sitio Web" value="68" />
+                    <StatCard label="Total Prospectos" value={stats.total.toString()} />
+                    <StatCard label="Prioridad Urgente" value={stats.urgent.toString()} color="text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                    <StatCard label="Prioridad Media" value={stats.medium.toString()} color="text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]" />
+                    <StatCard label="Sin Sitio Web" value={stats.withoutWebsite.toString()} />
                 </div>
             </div>
         </div>

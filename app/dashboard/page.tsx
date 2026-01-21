@@ -30,73 +30,104 @@ export default function Dashboard() {
 
   // Google Search Handler
   const handleGoogleSearch = async (query: string) => {
-    let effectiveQuery = query.trim();
+    // baseText: Priorizamos la entrada directa o lo que hay en el cuadro
     const currentBoxText = searchQuery.trim();
+    const effectiveLocation = query.trim() || currentBoxText;
+    const categoriesToSearch = selectedCategories.length > 0 ? selectedCategories : [null];
 
-    // 1. Manejo de escaneo vacío
-    if (!effectiveQuery) {
-      if (currentBoxText) effectiveQuery = currentBoxText;
-      else effectiveQuery = "Negocios Recomendados en esta zona";
+    if (!effectiveLocation && selectedCategories.length === 0) {
+      setErrorMsg("Por favor escribe una ciudad o selecciona una categoría.");
+      return;
     }
 
-    // 2. Combinación Inteligente: Si lanzamos una categoría desde la lista 
-    // y tenemos un lugar escrito en el buscador, los unimos.
-    else if (currentBoxText && effectiveQuery !== currentBoxText) {
-      // Evitamos redundancia: si ya dice "en", no lo agregamos
-      if (!effectiveQuery.toLowerCase().includes(" en ") && !effectiveQuery.toLowerCase().includes(" near ")) {
-        effectiveQuery = `${effectiveQuery} en ${currentBoxText}`;
-      }
-    }
-
-    else if (
-      !effectiveQuery.toLowerCase().includes(" en ") &&
-      !effectiveQuery.toLowerCase().includes(" near ") &&
-      // Lista de exclusión simple: si la query es un producto o servicio obvio, no le agregamos prefijo
-      !["papas", "tacos", "pizza", "hotel", "gym", "taller", "escuela"].some(k => effectiveQuery.toLowerCase().includes(k))
-    ) {
-      // Asunción segura: Si es una sola palabra o dos y no es un servicio común, probablemente es una ciudad.
-      effectiveQuery = `Mejores negocios y servicios en ${effectiveQuery}`;
-    }
-
-    console.log("🔍 FRONTEND: Iniciando búsqueda en Google:", effectiveQuery);
     setLoading(true);
     setHasSearched(true);
     setErrorMsg("");
-    setLastFetchedQuery(query.trim()); // Store original user query
+    // Guardamos la zona de exploración para que el filtro local no esconda los resultados
+    setLastFetchedQuery(effectiveLocation);
 
     try {
-      const res = await fetch("/api/places/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Use effectiveQuery
-        body: JSON.stringify({ query: effectiveQuery }),
-      });
+      const searchTasks = categoriesToSearch.map(async (cat) => {
+        let finalQuery = "";
 
-      console.log("📥 FRONTEND: Respuesta recibida [status]:", res.status);
-      const data = await res.json();
-      console.log("📦 FRONTEND: Datos parseados:", data);
+        // CASO 1: CON CATEGORÍAS (Búsqueda Sincronizada)
+        if (cat) {
+          if (effectiveLocation) {
+            // Evitamos duplicar si el usuario ya puso el nicho o un "en"
+            if (effectiveLocation.toLowerCase().includes(" en ") ||
+              effectiveLocation.toLowerCase().includes(" near ") ||
+              effectiveLocation.toLowerCase().includes(cat.toLowerCase().substring(0, 5))) {
+              finalQuery = `${cat} ${effectiveLocation}`;
+            } else {
+              finalQuery = `${cat} en ${effectiveLocation}`;
+            }
+          } else {
+            finalQuery = cat;
+          }
+        }
+        // CASO 2: SIN CATEGORÍAS (Búsqueda Libre)
+        else {
+          finalQuery = effectiveLocation;
 
-      if (data.success) {
-        // Acumular resultados: Filtrar duplicados basándose en la dirección o ID
-        setGoogleProspects(prev => {
-          const existingIds = new Set(prev.map(p => p.id || p.address));
-          const newResults = data.data.filter((p: Prospect) => !existingIds.has(p.id || p.address));
-          return [...prev, ...newResults];
+          // Contexto automático para una mejor búsqueda en Google Maps
+          const lowerQ = finalQuery.toLowerCase();
+          const needsLocationContext = !lowerQ.includes(" en ") &&
+            !lowerQ.includes(" near ") &&
+            !["tacos", "pizza", "hotel", "gym", "taller", "escuela", "restaurante", "abogado", "dentista"].some(k => lowerQ.includes(k));
+
+          if (needsLocationContext) {
+            finalQuery = `Mejores negocios y servicios en ${finalQuery}`;
+          }
+        }
+
+        console.log("🔍 SMART SCAN:", finalQuery);
+
+        const res = await fetch("/api/places/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: finalQuery }),
         });
 
-        if (data.data.length === 0) {
-          console.warn("⚠️ FRONTEND: 0 resultados encontrados.");
-          setErrorMsg(`Google no encontró resultados para: "${effectiveQuery}".`);
-        } else {
-          console.log(`✅ FRONTEND: ${data.data.length} prospectos nuevos cargados.`);
-        }
-      } else {
-        console.error("❌ FRONTEND: API Error:", data.error);
-        setErrorMsg(`Error de Google API: ${data.error}`);
+        return res.json();
+      });
+
+      const results = await Promise.all(searchTasks);
+
+      let totalNewProspects = 0;
+      let someSuccess = false;
+      let lastApiError = "";
+
+      setGoogleProspects(prev => {
+        let updatedList = [...prev];
+        const existingIds = new Set(prev.map(p => p.id || p.address));
+
+        results.forEach(data => {
+          if (data.success) {
+            someSuccess = true;
+            if (data.data) {
+              data.data.forEach((p: Prospect) => {
+                if (!existingIds.has(p.id || p.address)) {
+                  updatedList.push(p);
+                  existingIds.add(p.id || p.address);
+                  totalNewProspects++;
+                }
+              });
+            }
+          } else {
+            lastApiError = data.error || "Error de conexión con Google API";
+          }
+        });
+
+        return updatedList;
+      });
+
+      if (!someSuccess && lastApiError) {
+        setErrorMsg(`Google API: ${lastApiError}`);
       }
+
     } catch (error) {
-      console.error("❌ FRONTEND: Error Crítico:", error);
-      setErrorMsg("Error de conexión al servidor. Intenta de nuevo.");
+      console.error("❌ ERROR CRÍTICO:", error);
+      setErrorMsg("Error de conexión. Revisa tu internet.");
     } finally {
       setLoading(false);
     }
@@ -116,25 +147,28 @@ export default function Dashboard() {
     // 1. Si no hay filtros activos, mostrar todo
     if (!hasSearch && !hasCategories) return matchesPriority;
 
-    // 2. Si hay búsqueda de texto, verificar si coincide
+    // 2. Inteligencia de Filtrado:
+    // Si el texto del buscador es LA MISMA ciudad que acabamos de escanear,
+    // NO filtramos localmente (para que no se escondan los resultados de otros lugares).
+    // Solo filtramos si el usuario escribe algo distinto para "buscar en su lista".
+    const isScanLocation = q === lastFetchedQuery.toLowerCase().trim();
+
     const matchesSearch = hasSearch && (
+      isScanLocation || // Si es la zona de escaneo, no restringimos
       prospect.name.toLowerCase().includes(q) ||
-      prospect.address.toLowerCase().includes(q) ||
       prospect.category.toLowerCase().includes(q)
     );
 
     // 3. Si hay categorías seleccionadas, verificar si coincide
     const matchesCategory = hasCategories && selectedCategories.includes(prospect.category);
 
-    // 4. Lógica de Acumulación (OR): 
-    // Si el usuario busca "Tacos" y tiene marcada la casilla "Abogados",
-    // queremos que vea AMBOS resultados acumulados.
-    if (hasSearch && hasCategories) {
+    // 4. Lógica de Acumulación:
+    // Mostramos si coincide con la búsqueda (que incluye la ciudad actual) O con la categoría
+    if (hasSearch || hasCategories) {
       return matchesPriority && (matchesSearch || matchesCategory);
     }
 
-    // 5. Si solo hay uno de los dos filtros, aplicar ese
-    return matchesPriority && (matchesSearch || matchesCategory);
+    return matchesPriority;
   });
 
   const handleCategoryChange = (category: string) => {
@@ -145,10 +179,18 @@ export default function Dashboard() {
     );
   };
 
+  // Cálculo de estadísticas en tiempo real
+  const stats = {
+    total: googleProspects.length,
+    urgent: googleProspects.filter(p => p.priority === "URGENTE").length,
+    medium: googleProspects.filter(p => p.priority === "MEDIO").length,
+    withoutWebsite: googleProspects.filter(p => !p.hasWebsite).length,
+  };
+
   return (
     <div className="flex min-h-screen bg-[#0B0B0E] pt-44 md:pt-52">
       <Header onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
-      <StatsBar />
+      <StatsBar stats={stats} />
 
       <Sidebar
         isOpen={mobileMenuOpen}
@@ -156,6 +198,7 @@ export default function Dashboard() {
         selectedCategories={selectedCategories}
         onCategoryChange={handleCategoryChange}
         onSelectAll={() => setSelectedCategories([...CATEGORIES])}
+        searchQuery={searchQuery}
         onSearch={(q) => {
           setSearchQuery(q);
         }}
