@@ -53,10 +53,6 @@ export default function Dashboard() {
     setErrorMsg("");
     setLastFetchedQuery(query.trim()); // Store original user query
 
-    // Clear filters to ensure new results are visible
-    setSelectedCategories([]);
-    setSelectedPriority("Todas las prioridades");
-
     try {
       const res = await fetch("/api/places/search", {
         method: "POST",

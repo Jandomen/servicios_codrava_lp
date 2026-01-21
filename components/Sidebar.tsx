@@ -115,7 +115,8 @@ export function Sidebar({
         );
     };
 
-    const handleCategoryClick = (cat: string) => {
+    const handleCategoryClick = (e: React.MouseEvent, cat: string) => {
+        e.preventDefault();
         onCategoryChange(cat);
 
         const isSelecting = !selectedCategories.includes(cat);
@@ -195,31 +196,31 @@ export function Sidebar({
                                                 return (
                                                     <label
                                                         key={cat}
-                                                        className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-[#D4AF37]/10"
+                                                        className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-[#D4AF37]/10 group/item"
+                                                        onClick={(e) => handleCategoryClick(e, cat)}
                                                     >
                                                         <div
                                                             className={cn(
-                                                                "h-4 w-4 flex items-center justify-center rounded border",
+                                                                "h-4 w-4 flex items-center justify-center rounded border transition-all",
                                                                 checked
-                                                                    ? "border-green-500 shadow-[0_0_6px_rgba(34,197,94,.6)]"
-                                                                    : "border-zinc-600"
+                                                                    ? "border-green-500 bg-green-500/10 shadow-[0_0_8px_rgba(34,197,94,.4)]"
+                                                                    : "border-zinc-600 group-hover/item:border-zinc-500"
                                                             )}
                                                         >
                                                             <input
                                                                 type="checkbox"
                                                                 checked={checked}
                                                                 readOnly
-                                                                onClick={() => handleCategoryClick(cat)}
-                                                                className="absolute opacity-0"
+                                                                className="sr-only"
                                                             />
                                                             {checked && (
-                                                                <Check className="h-3 w-3 text-green-500 stroke-[3]" />
+                                                                <Check className="h-3 w-3 text-green-500 stroke-[4] animate-in zoom-in-50 duration-200" />
                                                             )}
                                                         </div>
                                                         <span
                                                             className={cn(
-                                                                "text-xs",
-                                                                checked ? "text-green-500 font-medium" : "text-zinc-300"
+                                                                "text-xs transition-colors",
+                                                                checked ? "text-green-500 font-bold" : "text-zinc-400 group-hover/item:text-zinc-200"
                                                             )}
                                                         >
                                                             {cat}
