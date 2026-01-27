@@ -9,6 +9,11 @@ import { ProspectModal } from "@/components/ProspectModal";
 import { LayoutGrid, Map, AlertCircle, Search } from "lucide-react";
 import { StatsBar } from "@/components/StatsBar";
 
+const PRODUCT_KEYWORDS = ["tacos", "huaraches", "comida", "hidrogeno", "chocolates", "libros", "pizza", "motos", "motocicletas", "pomadas", "medicamentos"];
+
+const normalize = (text: string) =>
+  text ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+
 export default function Dashboard() {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,12 +30,22 @@ export default function Dashboard() {
 
   const [lastFetchedQuery, setLastFetchedQuery] = useState("");
 
-  const handleGoogleSearch = async (query: string) => {
-    const currentBoxText = searchQuery.trim();
-    const effectiveLocation = query.trim() || currentBoxText;
-    const categoriesToSearch = selectedCategories.length > 0 ? selectedCategories : [null];
+  const handleGoogleSearch = async (trigger: string) => {
+    // 1. Candado: Evita colisiones por múltiples clics
+    if (loading) return;
 
-    if (!effectiveLocation && selectedCategories.length === 0) {
+    const isCategoryTrigger = CATEGORIES.includes(trigger);
+    const locationPart = isCategoryTrigger ? searchQuery.trim() : trigger.trim();
+
+    const isLocationOnly = !isCategoryTrigger && !PRODUCT_KEYWORDS.some(k => normalize(locationPart).includes(normalize(k)));
+
+    const categoriesToScan = isCategoryTrigger
+      ? [trigger]
+      : (isLocationOnly
+        ? [null, "Médicos", "Restaurantes", "Talleres Mecánicos", "Escuelas", "Boutiques"]
+        : (selectedCategories.length > 0 ? selectedCategories : [null]));
+
+    if (!locationPart && !isCategoryTrigger && categoriesToScan.every(c => !c)) {
       setErrorMsg("Por favor escribe una ciudad o selecciona una categoría.");
       return;
     }
@@ -39,127 +54,113 @@ export default function Dashboard() {
     setHasSearched(true);
     setErrorMsg("");
 
-    setLastFetchedQuery(effectiveLocation);
+    // 2. Reseteo inteligente si cambió de ciudad
+    const normalizedNewLocation = normalize(locationPart || "");
+    const normalizedOldLocation = normalize(lastFetchedQuery || "");
+    if (normalizedNewLocation !== normalizedOldLocation && !isCategoryTrigger) {
+      setGoogleProspects([]);
+      setLastFetchedQuery(locationPart || "Búsqueda Local");
+    }
 
     try {
-      const searchTasks = categoriesToSearch.map(async (cat) => {
-        let finalQuery = "";
+      const searchTasks = categoriesToScan.map(async (cat) => {
+        try {
+          const finalQuery = cat ? (locationPart ? `${cat} en ${locationPart}` : cat) : locationPart;
 
+          const res = await fetch("/api/places/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: finalQuery }),
+          });
 
-        if (cat) {
-          if (effectiveLocation) {
-
-            if (effectiveLocation.toLowerCase().includes(" en ") ||
-              effectiveLocation.toLowerCase().includes(" near ") ||
-              effectiveLocation.toLowerCase().includes(cat.toLowerCase().substring(0, 5))) {
-              finalQuery = `${cat} ${effectiveLocation}`;
-            } else {
-              finalQuery = `${cat} en ${effectiveLocation}`;
-            }
-          } else {
-            finalQuery = cat;
-          }
+          if (!res.ok) throw new Error("API Offline");
+          const data = await res.json();
+          return { ...data, searchedCategory: cat, success: !!data.success };
+        } catch (err) {
+          console.warn(`Error en tarea ${cat}:`, err);
+          return { success: false, searchedCategory: cat };
         }
-
-        else {
-          finalQuery = effectiveLocation;
-
-
-          const lowerQ = finalQuery.toLowerCase();
-          const needsLocationContext = !lowerQ.includes(" en ") &&
-            !lowerQ.includes(" near ") &&
-            !["tacos", "pizza", "hotel", "gym", "taller", "escuela", "restaurante", "abogado", "dentista"].some(k => lowerQ.includes(k));
-
-          if (needsLocationContext) {
-            finalQuery = `Mejores negocios y servicios en ${finalQuery}`;
-          }
-        }
-
-        console.log("🔍 SMART SCAN:", finalQuery);
-
-        const res = await fetch("/api/places/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: finalQuery }),
-        });
-
-        return res.json();
       });
 
       const results = await Promise.all(searchTasks);
-
-      let totalNewProspects = 0;
       let someSuccess = false;
-      let lastApiError = "";
 
       setGoogleProspects(prev => {
-        let updatedList = [...prev];
-        const existingIds = new Set(prev.map(p => p.id || p.address));
+        const newList: Prospect[] = [];
+        const existingIds = new Set(prev.map(p => p.id));
 
         results.forEach(data => {
-          if (data.success) {
+          if (data.success && data.data) {
             someSuccess = true;
-            if (data.data) {
-              data.data.forEach((p: Prospect) => {
-                if (!existingIds.has(p.id || p.address)) {
-                  updatedList.push(p);
-                  existingIds.add(p.id || p.address);
-                  totalNewProspects++;
-                }
-              });
-            }
-          } else {
-            lastApiError = data.error || "Error de conexión con Google API";
+            data.data.forEach((p: Prospect) => {
+              if (data.searchedCategory && (!p.category || p.category === "Negocio")) {
+                p.category = data.searchedCategory;
+              }
+              if (!existingIds.has(p.id)) {
+                newList.push(p);
+                existingIds.add(p.id);
+              }
+            });
           }
         });
 
-        return updatedList;
+        return [...newList, ...prev];
       });
 
-      if (!someSuccess && lastApiError) {
-        setErrorMsg(`Google API: ${lastApiError}`);
+      if (!someSuccess) {
+
       }
 
     } catch (error) {
       console.error("❌ ERROR CRÍTICO:", error);
-      setErrorMsg("Error de conexión. Revisa tu internet.");
+      setErrorMsg("Error de conexión. Intenta de nuevo por favor.");
     } finally {
+      // 3. DESBLOQUEO TOTAL: El botón siempre vuelve a estar activo aquí
       setLoading(false);
     }
   };
 
 
-  const filteredProspects = googleProspects.filter((prospect) => {
 
+
+  const filteredProspects = googleProspects.filter((prospect) => {
+    const q = normalize(searchQuery.trim());
+    const hasSearch = q.length > 0;
+    const hasCategories = selectedCategories.length > 0;
+
+    // 1. Filtro de Prioridad
     const matchesPriority =
       selectedPriority === "Todas las prioridades" ||
       prospect.priority === selectedPriority;
 
-    const q = searchQuery.toLowerCase().trim();
-    const hasSearch = q.length > 0;
-    const hasCategories = selectedCategories.length > 0;
+    if (!matchesPriority) return false;
 
+    // 2. Si no hay nada pedido ni seleccionado, ocultamos todo
+    if (!hasSearch && !hasCategories) return false;
 
-    if (!hasSearch && !hasCategories) return matchesPriority;
-
-
-    const isScanLocation = q === lastFetchedQuery.toLowerCase().trim();
-
-    const matchesSearch = hasSearch && (
-      isScanLocation ||
-      prospect.name.toLowerCase().includes(q) ||
-      prospect.category.toLowerCase().includes(q)
+    // 3. Tokenización de la búsqueda (Ignoramos conectores y acentos)
+    const keywords = q.split(/\s+/).filter(word =>
+      (word.length > 2 || /\d/.test(word)) && // Permitimos palabras de 1-2 letras si son números (calle, no.)
+      !["las", "los", "con", "del", "que", "donde", "cerca"].includes(word)
     );
 
+    const isLocationSearch = q.length > 3 && !PRODUCT_KEYWORDS.some(k => q.includes(normalize(k)));
 
-    const matchesCategory = hasCategories && selectedCategories.includes(prospect.category);
-
-
-    if (hasSearch || hasCategories) {
-      return matchesPriority && (matchesSearch || matchesCategory);
+    // 4. Lógica de Selección
+    // Si el usuario marcó categorías, solo mostramos esas.
+    if (hasCategories) {
+      return selectedCategories.includes(prospect.category) && matchesPriority;
     }
 
-    return matchesPriority;
+    // Si no hay categorías marcadas:
+    // - Si es búsqueda de ubicación (Ej. Toluca), mostramos todos los resultados encontrados de forma general.
+    if (isLocationSearch) return matchesPriority;
+
+    // - Si es búsqueda de producto o nombre (Ej. Tacos), validamos el match de texto.
+    return keywords.length > 0 && keywords.every(word =>
+      normalize(prospect.name).includes(word) ||
+      normalize(prospect.category).includes(word)
+    );
   });
 
   const handleCategoryChange = (category: string) => {
@@ -172,10 +173,10 @@ export default function Dashboard() {
 
 
   const stats = {
-    total: googleProspects.length,
-    urgent: googleProspects.filter(p => p.priority === "URGENTE").length,
-    medium: googleProspects.filter(p => p.priority === "MEDIO").length,
-    withoutWebsite: googleProspects.filter(p => !p.hasWebsite).length,
+    total: filteredProspects.length,
+    urgent: filteredProspects.filter(p => p.priority === "URGENTE").length,
+    medium: filteredProspects.filter(p => p.priority === "MEDIO").length,
+    withoutWebsite: filteredProspects.filter(p => !p.hasWebsite).length,
   };
 
   return (
@@ -190,6 +191,8 @@ export default function Dashboard() {
         onCategoryChange={handleCategoryChange}
         onSelectAll={() => setSelectedCategories([...CATEGORIES])}
         searchQuery={searchQuery}
+        detectedCategories={googleProspects.map(p => p.category)}
+        isLocationSearch={searchQuery.length > 3 && !PRODUCT_KEYWORDS.some(k => normalize(searchQuery).includes(normalize(k)))}
         onSearch={(q) => {
           setSearchQuery(q);
         }}

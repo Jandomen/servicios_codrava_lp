@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 export const CATEGORY_GROUPS = {
     "Salud & Bienestar": [
-        "Médicos", "Clínicas", "Dentistas", "Psicólogos", "Nutriólogos",
+        "Médicos / Doctores", "Clínicas", "Dentistas", "Psicólogos", "Nutriólogos",
         "Veterinarios", "Farmacias", "Laboratorios"
     ],
     "Gastronomía": [
@@ -50,7 +50,8 @@ export const CATEGORY_GROUPS = {
     ],
     "Automotriz": [
         "Talleres Mecánicos", "Refaccionarias",
-        "Lavado de Autos", "Agencias de Autos", "Llanteras"
+        "Lavado de Autos", "Agencias de Autos", "Llanteras",
+        "Venta de Motos", "Talleres de Motos"
     ],
     "Moda & Retail": [
         "Boutiques", "Zapaterías", "Joyerías",
@@ -94,7 +95,9 @@ export function Sidebar({
     isOpen = false,
     onClose = () => { },
     onSelectAll,
-    searchQuery = ""
+    searchQuery = "",
+    detectedCategories = [],
+    isLocationSearch = false
 }: {
     selectedCategories?: string[];
     onCategoryChange?: (category: string) => void;
@@ -106,6 +109,8 @@ export function Sidebar({
     onClose?: () => void;
     onSelectAll?: () => void;
     searchQuery?: string;
+    detectedCategories?: string[];
+    isLocationSearch?: boolean;
 }) {
     const [localSearch, setLocalSearch] = useState(searchQuery);
     const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
@@ -134,6 +139,22 @@ export function Sidebar({
 
     return (
         <>
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(212, 175, 55, 0.1);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(212, 175, 55, 0.3);
+                }
+            `}</style>
+
             {isOpen && (
                 <div
                     className="fixed inset-0 z-40 bg-black/60 lg:hidden"
@@ -175,7 +196,7 @@ export function Sidebar({
                                         onTriggerGoogleSearch(localSearch);
                                     }
                                 }}
-                                placeholder="Zona o nicho… (Ej. Toluca, Restaurantes en Roma)"
+                                placeholder="Zona, nicho o dirección… (Ej. Reforma 222, Restaurantes en Roma)"
                                 className="w-full rounded-lg bg-black/60 border border-zinc-800 pl-10 pr-16 py-2.5 text-sm text-white focus:border-[#D4AF37]/50 transition-all outline-none"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] text-zinc-600 font-medium select-none pointer-events-none">
@@ -217,15 +238,21 @@ export function Sidebar({
                             Categorías
                         </span>
                     </div>
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 pb-32 custom-scrollbar">
                         {Object.entries(CATEGORY_GROUPS).map(([group, items]) => {
                             const isExpanded = expandedGroups.includes(group);
                             const hasSelection = items.some(i =>
                                 selectedCategories.includes(i)
                             );
+                            const hasDetected = items.some(i =>
+                                detectedCategories.includes(i)
+                            );
 
                             return (
-                                <div key={group} className="border border-zinc-800 rounded-lg">
+                                <div key={group} className={cn(
+                                    "border rounded-lg transition-colors",
+                                    hasDetected ? "border-[#D4AF37]/40 bg-[#D4AF37]/5" : "border-zinc-800"
+                                )}>
                                     <button
                                         onClick={() => toggleGroup(group)}
                                         className={cn(
@@ -233,7 +260,12 @@ export function Sidebar({
                                             hasSelection ? "text-[#D4AF37]" : "text-zinc-400"
                                         )}
                                     >
-                                        {group}
+                                        <div className="flex items-center gap-2">
+                                            {group}
+                                            {hasDetected && (
+                                                <span className="flex h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                                            )}
+                                        </div>
                                         {isExpanded ? <ChevronDown /> : <ChevronRight />}
                                     </button>
 
@@ -241,38 +273,57 @@ export function Sidebar({
                                         <div className="p-2 space-y-1">
                                             {items.map(cat => {
                                                 const checked = selectedCategories.includes(cat);
+                                                const detectedCount = detectedCategories.filter(c => c === cat).length;
+                                                const isDetected = detectedCount > 0;
+                                                const showRadar = isDetected || (isLocationSearch && searchQuery.length > 3);
+
                                                 return (
                                                     <label
                                                         key={cat}
-                                                        className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-[#D4AF37]/10 group/item"
+                                                        className="flex items-center justify-between cursor-pointer p-2 rounded hover:bg-[#D4AF37]/10 group/item"
                                                         onClick={(e) => handleCategoryClick(e, cat)}
                                                     >
-                                                        <div
-                                                            className={cn(
-                                                                "h-4 w-4 flex items-center justify-center rounded border transition-all",
-                                                                checked
-                                                                    ? "border-green-500 bg-green-500/10 shadow-[0_0_8px_rgba(34,197,94,.4)]"
-                                                                    : "border-zinc-600 group-hover/item:border-zinc-500"
-                                                            )}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={checked}
-                                                                readOnly
-                                                                className="sr-only"
-                                                            />
-                                                            {checked && (
-                                                                <Check className="h-3 w-3 text-green-500 stroke-[4] animate-in zoom-in-50 duration-200" />
-                                                            )}
+                                                        <div className="flex items-center gap-3">
+                                                            <div
+                                                                className={cn(
+                                                                    "h-4 w-4 flex items-center justify-center rounded border transition-all",
+                                                                    checked
+                                                                        ? "border-green-500 bg-green-500/10 shadow-[0_0_8px_rgba(34,197,94,.4)]"
+                                                                        : "border-zinc-600 group-hover/item:border-zinc-500"
+                                                                )}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={checked}
+                                                                    readOnly
+                                                                    className="sr-only"
+                                                                />
+                                                                {checked && (
+                                                                    <Check className="h-3 w-3 text-green-500 stroke-[4] animate-in zoom-in-50 duration-200" />
+                                                                )}
+                                                            </div>
+                                                            <span
+                                                                className={cn(
+                                                                    "text-xs transition-colors",
+                                                                    checked ? "text-green-500 font-bold" : (isDetected ? "text-white/90" : (showRadar ? "text-zinc-300" : "text-zinc-500 group-hover/item:text-zinc-200"))
+                                                                )}
+                                                            >
+                                                                {cat}
+                                                            </span>
                                                         </div>
-                                                        <span
-                                                            className={cn(
-                                                                "text-xs transition-colors",
-                                                                checked ? "text-green-500 font-bold" : "text-zinc-400 group-hover/item:text-zinc-200"
-                                                            )}
-                                                        >
-                                                            {cat}
-                                                        </span>
+                                                        {showRadar && (
+                                                            <div className="flex items-center gap-2">
+                                                                {isDetected && (
+                                                                    <span className="text-[9px] font-bold text-[#D4AF37]/80 bg-[#D4AF37]/10 px-1.5 py-0.5 rounded-full border border-[#D4AF37]/20">
+                                                                        {detectedCount}
+                                                                    </span>
+                                                                )}
+                                                                <Radar className={cn(
+                                                                    "w-3 h-3 animate-pulse",
+                                                                    isDetected ? "text-[#D4AF37]" : "text-zinc-700"
+                                                                )} />
+                                                            </div>
+                                                        )}
                                                     </label>
                                                 );
                                             })}

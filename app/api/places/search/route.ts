@@ -44,8 +44,8 @@ export async function POST(req: Request) {
                     headers: {
                         "Content-Type": "application/json",
                         "X-Goog-Api-Key": apiKey,
-                        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.primaryType",
-                        "Referer": "http://localhost:3000/", // Consider making this dynamic based on req.headers.get("origin") or env var
+                        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.priceLevel,places.currentOpeningHours,places.photos",
+                        "Referer": "http://localhost:3000/",
                     },
                     body: JSON.stringify({
                         textQuery: query,
@@ -53,12 +53,7 @@ export async function POST(req: Request) {
                     }),
                 });
 
-                if (response.ok) break; // Success!
-
-                // If 500/503/429, we retry. Otherwise (400, 403), we stop.
-                if (![500, 503, 504, 429].includes(response.status)) {
-                    break;
-                }
+                if (response.ok) break;
             } catch (err) {
                 lastError = err;
                 console.warn(`Connection failed (Attempt ${attempt + 1}):`, err);
@@ -84,31 +79,29 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, data: [] });
         }
 
-        console.log(`Found ${data.places.length} places`);
-
-        // Map Google Places to our Prospect Interface
         const prospects = data.places.map((place: any) => {
-            // Estricta detección de WhatsApp (Solo Móviles Confirmados)
             const intl = place.internationalPhoneNumber || "";
             const cleanNumber = intl.replace(/\D/g, "");
-
-            // Regla: 
-            // 1. Debe ser México (+52)
-            // 2. Debe tener el marcador móvil (1) -> "+52 1"
-            // 3. Longitud exacta: 52 (2) + 1 (1) + 10 dígitos = 13 digitos
-            // CUALQUIER otra cosa se asume fijo o inválido para WA seguro.
-
             const isMexicoMobile = intl.startsWith("+52 1") && cleanNumber.length === 13;
-
-            // Si queremos soportar otros paises, aqui iría la lógica. 
-            // Por ahora, priorizamos "NO mostrar" sobre "Mostrar error".
-
             const waNumber = isMexicoMobile ? cleanNumber : undefined;
+
+            // ANALISÍS MULTI-CAPA DE CATEGORÍAS
+            // Priorizamos el primaryType, pero si es genérico, revisamos el array de types
+            const allTypes = [place.primaryType, ...(place.types || [])].filter(Boolean);
+            let finalCategory = "Negocio";
+
+            for (const type of allTypes) {
+                const formatted = formatCategory(type);
+                if (formatted !== "Negocio") {
+                    finalCategory = formatted;
+                    break;
+                }
+            }
 
             return {
                 id: place.id,
                 name: place.displayName?.text || "Desconocido",
-                category: place.primaryType ? formatCategory(place.primaryType) : "Negocio",
+                category: finalCategory,
                 rating: place.rating || 0,
                 reviewCount: place.userRatingCount || 0,
                 address: place.formattedAddress || "Sin dirección",
@@ -121,7 +114,9 @@ export async function POST(req: Request) {
                 phone: place.nationalPhoneNumber || place.formattedPhoneNumber || "",
                 website: place.websiteUri,
                 whatsapp: waNumber,
-                email: undefined,
+                isOpen: place.currentOpeningHours?.openNow,
+                priceLevel: place.priceLevel,
+                photo: place.photos?.[0]?.name,
                 coordinates: {
                     lat: place.location?.latitude,
                     lng: place.location?.longitude,
@@ -166,89 +161,97 @@ const CATEGORY_MAP: Record<string, string> = {
 function formatCategory(type: string): string {
     const t = type.toLowerCase();
 
-    // Salud
+    // Salud & Bienestar
     if (t.includes("dentist") || t.includes("orthodont")) return "Dentistas";
-    if (t.includes("doctor") || t.includes("practitioner") || t.includes("physician")) return "Médicos";
-    if (t.includes("clinic") || t.includes("hospital") || t.includes("medical")) return "Clínicas";
+    if (t.includes("doctor") || t.includes("practitioner") || t.includes("physician") || t.includes("medical_office") || t.includes("specialist")) return "Médicos / Doctores";
+    if (t.includes("clinic") || t.includes("hospital") || t.includes("medical") || t.includes("health")) return "Clínicas";
     if (t.includes("pharmacy") || t.includes("drugstore")) return "Farmacias";
     if (t.includes("veterinary") || t.includes("vet")) return "Veterinarios";
-    if (t.includes("psychologist") || t.includes("mental")) return "Psicólogos";
+    if (t.includes("psychologist") || t.includes("mental") || t.includes("counsel") || t.includes("therapist")) return "Psicólogos";
+    if (t.includes("nutrition") || t.includes("diet")) return "Nutriólogos";
+    if (t.includes("laboratory") || t.includes("lab")) return "Laboratorios";
 
     // Gastronomía
+    if (t.includes("bakery") || t.includes("pastry")) return "Pastelerías";
     if (t.includes("restaurant") || t.includes("food")) return "Restaurantes";
     if (t.includes("cafe") || t.includes("coffee")) return "Cafeterías";
-    if (t.includes("bakery")) return "Panaderías";
-    if (t.includes("bar") || t.includes("liquor") || t.includes("pub") || t.includes("night")) return "Bares";
-    if (t.includes("meal_delivery") || t.includes("meal_takeaway")) return "Comida Rápida";
+    if (t.includes("bar") || t.includes("liquor") || t.includes("pub") || t.includes("night") || t.includes("club")) return "Bares";
+    if (t.includes("meal_delivery") || t.includes("meal_takeaway") || t.includes("fast_food")) return "Comida Rápida";
+    if (t.includes("catering")) return "Catering";
 
     // Legal & Financiero
-    if (t.includes("lawyer") || t.includes("attorney") || t.includes("legal")) return "Abogados";
-    if (t.includes("accounting") || t.includes("finance") || t.includes("tax")) return "Contadores";
+    if (t.includes("lawyer") || t.includes("attorney") || t.includes("legal") || t.includes("court")) return "Abogados";
+    if (t.includes("accounting") || t.includes("finance") || t.includes("tax") || t.includes("auditor")) return "Contadores";
     if (t.includes("insur")) return "Seguros";
     if (t.includes("notary")) return "Notarías";
-    if (t.includes("bank") || t.includes("atm")) return "Bancos";
+    if (t.includes("bank") || t.includes("atm") || t.includes("credit_union") || t.includes("finance")) return "Bancos";
 
     // Hogar & Construcción
-    if (t.includes("hardware")) return "Ferreterías";
+    if (t.includes("hardware") || t.includes("home_improvement")) return "Ferreterías";
     if (t.includes("plumber")) return "Plomeros";
     if (t.includes("electrician")) return "Electricistas";
-    if (t.includes("carpenter") || t.includes("furniture")) return "Mueblerías";
+    if (t.includes("carpenter") || t.includes("furniture") || t.includes("home_goods")) return "Mueblerías";
     if (t.includes("architect")) return "Arquitectos";
-    if (t.includes("painter") || t.includes("decor")) return "Decoración";
+    if (t.includes("painter") || t.includes("decor") || t.includes("interior_design")) return "Decoración";
+    if (t.includes("contractor") || t.includes("construction")) return "Contratistas";
+    if (t.includes("garden") || t.includes("landscape")) return "Jardinería";
 
-    // Industria
+    // Industria & Manufactura
     if (t.includes("factory") || t.includes("manufacturing") || t.includes("industrial")) return "Industria";
-    if (t.includes("warehouse") || t.includes("storage") || t.includes("wholesaler")) return "Bodegas";
+    if (t.includes("warehouse") || t.includes("storage") || t.includes("wholesaler") || t.includes("distribution") || t.includes("almacen")) return "Almacenes";
 
-    // Logística
+    // Logística & Transporte
     if (t.includes("moving_company") || t.includes("mover")) return "Mudanzas";
-    if (t.includes("logistics") || t.includes("freight") || t.includes("shipping")) return "Logística";
-    if (t.includes("post_office") || t.includes("courier")) return "Mensajería";
+    if (t.includes("logistics") || t.includes("freight") || t.includes("shipping") || t.includes("transport")) return "Logística";
+    if (t.includes("post_office") || t.includes("courier") || t.includes("delivery") || t.includes("package")) return "Paquetería";
 
-    // Entretenimiento
+    // Entretenimiento & Ocio
     if (t.includes("movie_theater") || t.includes("cinema")) return "Cines";
     if (t.includes("casino")) return "Casinos";
-    if (t.includes("museum") || t.includes("art_gallery")) return "Museos";
+    if (t.includes("museum") || t.includes("art_gallery") || t.includes("culture")) return "Museos";
     if (t.includes("bowling")) return "Boliches";
-    if (t.includes("amusement_park")) return "Parques de Diversiones";
-
-    // Servicios Públicos & Gobierno
-    if (t.includes("local_government_office") || t.includes("city_hall")) return "Gobierno";
-    if (t.includes("fire_station")) return "Bomberos";
-    if (t.includes("police")) return "Comisarías";
+    if (t.includes("amusement_park") || t.includes("theme_park")) return "Parques de Diversiones";
+    if (t.includes("event_venue") || t.includes("function_hall") || t.includes("banquet")) return "Salones de Eventos";
 
     // Mascotas
-    if (t.includes("pet_store")) return "Tiendas de Mascotas";
+    if (t.includes("pet_store") || t.includes("pet_shop")) return "Tiendas de Mascotas";
+    if (t.includes("pet_grooming") || t.includes("pet_esthetic")) return "Estéticas Caninas";
+    if (t.includes("pet_hotel") || t.includes("dog_hotel")) return "Hoteles para Perros";
 
     // Moda & Retail
-    if (t.includes("clothing_store") || t.includes("boutique")) return "Boutiques";
+    if (t.includes("clothing_store") || t.includes("boutique") || t.includes("fashion")) return "Boutiques";
     if (t.includes("shoe_store")) return "Zapaterías";
     if (t.includes("jewelry_store")) return "Joyerías";
-    if (t.includes("shopping_mall")) return "Centros Comerciales";
+    if (t.includes("shopping_mall") || t.includes("department_store")) return "Centros Comerciales";
 
     // Educación
-    if (t.includes("school") || t.includes("education")) return "Escuelas";
     if (t.includes("university") || t.includes("college")) return "Universidades";
+    if (t.includes("school") || t.includes("education") || t.includes("learning")) return "Escuelas";
     if (t.includes("language")) return "Cursos de Idiomas";
 
     // Automotriz
+    if (t.includes("motorcycle_dealer") || t.includes("motorcycle_shop")) return "Venta de Motos";
+    if (t.includes("motorcycle_repair")) return "Talleres de Motos";
     if (t.includes("car_repair") || t.includes("mechanic")) return "Talleres Mecánicos";
-    if (t.includes("car_dealer")) return "Agencias de Autos";
+    if (t.includes("car_dealer") || t.includes("auto_dealer")) return "Agencias de Autos";
     if (t.includes("car_wash")) return "Lavado de Autos";
+    if (t.includes("tire") || t.includes("wheel")) return "Llanteras";
+    if (t.includes("auto_parts")) return "Refaccionarias";
 
     // Belleza
-    if (t.includes("hair") || t.includes("salon") || t.includes("barber")) return "Salones de Belleza";
+    if (t.includes("hair") || t.includes("salon") || t.includes("barber") || t.includes("beauty")) return "Salones de Belleza";
     if (t.includes("spa") || t.includes("massage")) return "Spas";
-    if (t.includes("gym") || t.includes("fitness") || t.includes("yoga")) return "Gimnasios";
+    if (t.includes("gym") || t.includes("fitness") || t.includes("yoga") || t.includes("studio")) return "Gimnasios";
 
-    // Tecnología
+    // Tecnología & Servicios
     if (t.includes("electronics")) return "Electrónica";
-    if (t.includes("web") || t.includes("software") || t.includes("computer")) return "Desarrollo Web";
+    if (t.includes("computer") || t.includes("it_support") || t.includes("repair")) return "Soporte Técnico";
+    if (t.includes("print") || t.includes("copy")) return "Imprentas";
 
     // Inmobiliaria & Turismo
     if (t.includes("real_estate") || t.includes("agency")) return "Inmobiliarias";
-    if (t.includes("hotel") || t.includes("lodging")) return "Hoteles";
-    if (t.includes("travel")) return "Agencias de Viajes";
+    if (t.includes("hotel") || t.includes("lodging") || t.includes("hostel") || t.includes("bed_and_breakfast")) return "Hoteles";
+    if (t.includes("travel") || t.includes("tour")) return "Agencias de Viajes";
 
     // Fallback: Clean string
     return t.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
