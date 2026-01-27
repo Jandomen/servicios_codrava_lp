@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { ProspectCard, type Prospect } from "@/components/ProspectCard";
 import { MapComponent } from "@/components/MapComponent";
 import { ProspectModal } from "@/components/ProspectModal";
-import { LayoutGrid, Map, AlertCircle, Search } from "lucide-react";
+import { LayoutGrid, Map as MapIcon, AlertCircle, Search } from "lucide-react";
 import { StatsBar } from "@/components/StatsBar";
 
 const PRODUCT_KEYWORDS = ["tacos", "huaraches", "comida", "hidrogeno", "chocolates", "libros", "pizza", "motos", "motocicletas", "pomadas", "medicamentos"];
@@ -31,53 +31,52 @@ export default function Dashboard() {
   const [lastFetchedQuery, setLastFetchedQuery] = useState("");
 
   const handleGoogleSearch = async (trigger: string) => {
-    // 1. Candado: Evita colisiones por múltiples clics
     if (loading) return;
 
     const isCategoryTrigger = CATEGORIES.includes(trigger);
     const locationPart = isCategoryTrigger ? searchQuery.trim() : trigger.trim();
 
-    const isLocationOnly = !isCategoryTrigger && !PRODUCT_KEYWORDS.some(k => normalize(locationPart).includes(normalize(k)));
+    // Normalizamos para comparar
+    const currentLoc = normalize(locationPart || "");
+    const lastLoc = normalize(lastFetchedQuery || "");
 
+    setLoading(true);
+    setHasSearched(true);
+    setErrorMsg("");
+
+    // --- LÓGICA DE LIMPIEZA ---
+    // Si NO es una categoría (es una búsqueda nueva en la barra) 
+    // O si la ubicación cambió drásticamente, LIMPIEZA TOTAL.
+    const isNewSearch = !isCategoryTrigger || (currentLoc !== lastLoc);
+
+    if (isNewSearch && !isCategoryTrigger) {
+      setGoogleProspects([]); // Limpiamos el grid
+      setSelectedCategories([]); // Desmarcamos categorías para empezar de cero
+    }
+
+    setLastFetchedQuery(locationPart || "Búsqueda Local");
+
+    // Decidir qué categorías escanear
+    const isLocationOnly = !isCategoryTrigger && !PRODUCT_KEYWORDS.some(k => normalize(locationPart).includes(normalize(k)));
     const categoriesToScan = isCategoryTrigger
       ? [trigger]
       : (isLocationOnly
         ? [null, "Médicos", "Restaurantes", "Talleres Mecánicos", "Escuelas", "Boutiques"]
         : (selectedCategories.length > 0 ? selectedCategories : [null]));
 
-    if (!locationPart && !isCategoryTrigger && categoriesToScan.every(c => !c)) {
-      setErrorMsg("Por favor escribe una ciudad o selecciona una categoría.");
-      return;
-    }
-
-    setLoading(true);
-    setHasSearched(true);
-    setErrorMsg("");
-
-    // 2. Reseteo inteligente si cambió de ciudad
-    const normalizedNewLocation = normalize(locationPart || "");
-    const normalizedOldLocation = normalize(lastFetchedQuery || "");
-    if (normalizedNewLocation !== normalizedOldLocation && !isCategoryTrigger) {
-      setGoogleProspects([]);
-      setLastFetchedQuery(locationPart || "Búsqueda Local");
-    }
-
     try {
       const searchTasks = categoriesToScan.map(async (cat) => {
         try {
           const finalQuery = cat ? (locationPart ? `${cat} en ${locationPart}` : cat) : locationPart;
-
           const res = await fetch("/api/places/search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ query: finalQuery }),
           });
-
           if (!res.ok) throw new Error("API Offline");
           const data = await res.json();
           return { ...data, searchedCategory: cat, success: !!data.success };
         } catch (err) {
-          console.warn(`Error en tarea ${cat}:`, err);
           return { success: false, searchedCategory: cat };
         }
       });
@@ -85,37 +84,39 @@ export default function Dashboard() {
       const results = await Promise.all(searchTasks);
       let someSuccess = false;
 
+      const newLeads: Prospect[] = [];
+      results.forEach(data => {
+        if (data.success && data.data) {
+          someSuccess = true;
+          data.data.forEach((p: Prospect) => {
+            if (data.searchedCategory && (!p.category || p.category === "Negocio")) {
+              p.category = data.searchedCategory;
+            }
+            newLeads.push(p);
+          });
+        }
+      });
+
       setGoogleProspects(prev => {
-        const newList: Prospect[] = [];
-        const existingIds = new Set(prev.map(p => p.id));
+        // Si fue una búsqueda nueva, ignoramos el 'prev' para que no reaparezcan los viejos
+        const baseList = isNewSearch && !isCategoryTrigger ? [] : prev;
+        const combined = [...newLeads, ...baseList];
 
-        results.forEach(data => {
-          if (data.success && data.data) {
-            someSuccess = true;
-            data.data.forEach((p: Prospect) => {
-              if (data.searchedCategory && (!p.category || p.category === "Negocio")) {
-                p.category = data.searchedCategory;
-              }
-              if (!existingIds.has(p.id)) {
-                newList.push(p);
-                existingIds.add(p.id);
-              }
-            });
-          }
+        // Deduplicación por ID
+        const uniqueMap = new Map();
+        combined.forEach(p => {
+          if (!uniqueMap.has(p.id)) uniqueMap.set(p.id, p);
         });
-
-        return [...newList, ...prev];
+        return Array.from(uniqueMap.values());
       });
 
       if (!someSuccess) {
-
+        setErrorMsg("No se encontraron resultados nuevos. Intenta con otro término.");
       }
 
     } catch (error) {
-      console.error("❌ ERROR CRÍTICO:", error);
-      setErrorMsg("Error de conexión. Intenta de nuevo por favor.");
+      setErrorMsg("Error al conectar. Intenta de nuevo.");
     } finally {
-      // 3. DESBLOQUEO TOTAL: El botón siempre vuelve a estar activo aquí
       setLoading(false);
     }
   };
@@ -243,7 +244,7 @@ export default function Dashboard() {
                     }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Map className="h-4 w-4" />
+                    <MapIcon className="h-4 w-4" />
                     Mapa
                   </div>
                 </button>
